@@ -18,8 +18,7 @@ var filter = require('gulp-filter');
 
 var dir = {
   root: 'crawl',
-  crawl_generate: 'crawl_generate',
-  crawl_list: 'crawl_list'
+  CrawlList1: '1.txt'
 };
 
 /**
@@ -35,12 +34,10 @@ dir.CrawlBase = path.join(dir.root, 'CrawlBase');
 dir.seeds = path.join(dir.root, 'seeds');
 
 /**
- * segments: A segment is a self-contained set of URLs, fetched content, parsed
- * content, and so on. For now we are only supporting one segment:
+ * CrawlList: A crawl list is a set of URLs that will be processed together:
  */
 
-dir.segments = path.join(dir.root, 'segments');
-dir.segment1 = path.join(dir.segments, '1');
+dir.CrawlList = path.join(dir.root, 'CrawlList');
 
 
 /**
@@ -109,32 +106,32 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
 
 
 /**
- * Clear the segments:
+ * Clear all crawl lists:
  */
 
-gulp.task('clean:segments', function (cb){
-  del(dir.segments, cb);
+gulp.task('clean:CrawlList', function (cb){
+  del(dir.CrawlList, cb);
 });
 
 /**
- * Clear segment 1:
+ * Clear crawl list 1:
  */
 
-gulp.task('clean:segment1', function (cb){
-  del(dir.segment1, cb);
+gulp.task('clean:CrawlList1', function (cb){
+  del(path.join(dir.CrawlList, dir.CrawlList1), cb);
 });
 
 
 /**
- * generate: Place a list of URLs from the crawl database into a segment.
- * For now we're only supporting one segment:
+ * generate: Place a list of URLs from the crawl database into a crawl list.
+ * For now we're only supporting one crawl list:
  *
  * See:
  *
  *  http://wiki.apache.org/nutch/bin/nutch%20generate
  */
 
-gulp.task('generate', ['clean:segment1'], function (){
+gulp.task('generate', ['clean:CrawlList1'], function (){
   return gulp.src(path.join(dir.CrawlBase, '*'))
 
     /**
@@ -182,6 +179,6 @@ gulp.task('generate', ['clean:segment1'], function (){
       file.contents = new Buffer(decodeURIComponent(file.relative));
       cb(null, file);
     }))
-    .pipe(concat(dir.crawl_list))
-    .pipe(gulp.dest(path.join(dir.segment1, dir.crawl_generate)));
+    .pipe(concat(dir.CrawlList1))
+    .pipe(gulp.dest(dir.CrawlList));
 });
