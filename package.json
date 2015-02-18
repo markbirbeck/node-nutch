@@ -1,0 +1,11 @@
+{
+  "name": "node-nutch",
+  "version": "0.0.0",
+  "description": "A nodejs implementation of the Nutch command set.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mark Birbeck <mark.birbeck@gmail.com> (http://markbirbeck.com/)",
+  "license": "MIT"
+}
