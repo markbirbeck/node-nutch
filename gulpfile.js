@@ -23,10 +23,10 @@ var dir = {
 };
 
 /**
- * crawldb: A list of all URLs we know about with their status:
+ * CrawlBase: A list of all URLs we know about with their status:
  */
 
-dir.crawldb = path.join(dir.root, 'crawldb');
+dir.CrawlBase = path.join(dir.root, 'CrawlBase');
 
 /**
  * seeds: A set of text files each of which contains URLs:
@@ -57,8 +57,8 @@ CrawlState.GENERATED = 'generated';
  * Clear the crawl database:
  */
 
-gulp.task('clean:crawldb', function (cb){
-  del(dir.crawldb, cb);
+gulp.task('clean:CrawlBase', function (cb){
+  del(dir.CrawlBase, cb);
 });
 
 
@@ -70,7 +70,7 @@ gulp.task('clean:crawldb', function (cb){
  *  http://wiki.apache.org/nutch/bin/nutch%20inject
  */
 
-gulp.task('inject', ['clean:crawldb'], function (){
+gulp.task('inject', ['clean:CrawlBase'], function (){
   return gulp.src(path.join(dir.seeds, '*'))
 
     /**
@@ -104,7 +104,7 @@ gulp.task('inject', ['clean:crawldb'], function (){
       cb(null, file);
     }))
 
-    .pipe(gulp.dest(dir.crawldb));
+    .pipe(gulp.dest(dir.CrawlBase));
 });
 
 
@@ -135,7 +135,7 @@ gulp.task('clean:segment1', function (cb){
  */
 
 gulp.task('generate', ['clean:segment1'], function (){
-  return gulp.src(path.join(dir.crawldb, '*'))
+  return gulp.src(path.join(dir.CrawlBase, '*'))
 
     /**
      * Save a bit of processing by only parsing the JSON once:
@@ -172,7 +172,7 @@ gulp.task('generate', ['clean:segment1'], function (){
       file.contents = new Buffer(JSON.stringify( file.crawlState ));
       cb(null, file);
     }))
-    .pipe(gulp.dest(dir.crawldb))
+    .pipe(gulp.dest(dir.CrawlBase))
 
     /**
      * Finally, create a crawl list:
