@@ -7,5 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Mark Birbeck <mark.birbeck@gmail.com> (http://markbirbeck.com/)",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "~3.8.11"
+  }
 }
