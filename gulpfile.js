@@ -108,7 +108,9 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
         .toString()
         .split(/\r?\n/)
         .forEach(function (url){
-          self.push(url);
+          if (url){
+            self.push(url);
+          }
         });
         next();
     }))
