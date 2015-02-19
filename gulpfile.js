@@ -163,7 +163,7 @@ var crawlBase = {
  *  http://wiki.apache.org/nutch/bin/nutch%20inject
  */
 
-gulp.task('inject', ['clean:CrawlBase'], function (){
+gulp.task('inject', function (){
   return gulp.src(path.join(dir.seeds, '*'))
 
     /**
@@ -203,6 +203,19 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
     .pipe(crawlBase.dest());
 });
 
+    /**
+     * Don't bother if we already have an entry in the crawl database:
+     */
+
+    .pipe(es.map(function (uri, cb){
+      fs.exists(path.join(dir.CrawlBase, encodeURIComponent(uri)), function (exists){
+        if (exists){
+          cb();
+        } else {
+          cb(null, uri);
+        }
+      });
+    }))
 
 /**
  * generate: Place a list of URLs from the crawl database into a crawl list.
