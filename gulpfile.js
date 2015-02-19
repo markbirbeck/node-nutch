@@ -20,6 +20,7 @@ var request = require('request');
 var dir = {
   root: 'crawl'
 };
+var MAX_RETRIES = 3;
 
 /**
  * CrawlBase: A list of all URLs we know about with their status:
@@ -43,6 +44,8 @@ var CrawlState = function (state){
 };
 CrawlState.UNFETCHED = 'unfetched';
 CrawlState.GENERATED = 'generated';
+CrawlState.FETCHED = 'fetched';
+CrawlState.GONE = 'gone';
 
 /**
  * Class to handle fetched content:
@@ -156,6 +159,7 @@ gulp.task('generate', function (){
 
     .pipe(es.map(function (file, cb){
       file.data.crawlState.state = CrawlState.GENERATED;
+      file.data.crawlState.retries = 0;
       cb(null, file);
     }))
 
@@ -207,8 +211,51 @@ gulp.task('fetch', function (){
         }
 
         file.data.fetchedContent = new FetchedContent(status, headers, body);
+        file.data.crawlState.retries++;
         cb(null, file);
       });
+    }))
+
+    /**
+     * Update the crawl database with any changes:
+     */
+
+    .pipe(crawlBase.dest());
+});
+
+
+/**
+ * updatedb: Update the crawl database with the results of a fetch:
+ *
+ * See:
+ *
+ *  http://wiki.apache.org/nutch/bin/nutch%20updatedb
+ */
+
+gulp.task('updatedb', function (){
+  return crawlBase.src()
+
+    /**
+     * Only process data sources that have been recently fetched:
+     */
+
+    .pipe(filter(function (file){
+      return (file.data.crawlState.state === CrawlState.GENERATED) &&
+        (file.data.fetchedContent);
+    }))
+
+    /**
+     * Update the crawl state based on the data returned:
+     */
+
+    .pipe(es.map(function (file, cb){
+      if (file.data.fetchedContent.status === 200){
+        file.data.crawlState.state = CrawlState.FETCHED;
+      }
+      if (file.data.fetchedContent.status === 404 || file.data.crawlState.retries > MAX_RETRIES){
+        file.data.crawlState.state = CrawlState.GONE;
+      }
+      cb(null, file);
     }))
 
     /**
