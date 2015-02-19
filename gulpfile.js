@@ -1,5 +1,6 @@
 var path = require('path');
 var Buffer = require('buffer').Buffer;
+var url = require('url');
 
 var es = require('event-stream');
 var through2 = require('through2');
@@ -12,6 +13,7 @@ var gutil = require('gulp-util');
 var filter = require('gulp-filter');
 
 var request = require('request');
+var cheerio = require('cheerio');
 
 /**
  * Configuration:
@@ -56,6 +58,17 @@ var FetchedContent = function(status, headers, content){
   this.headers = headers;
   this.content = content;
 };
+
+/**
+ * Class to handle parse state:
+ */
+
+var ParseState = function (state){
+  this.state = state || ParseState.NOTPARSED;
+};
+ParseState.NOTPARSED = 'notparsed';
+ParseState.SUCCESS = 'success';
+ParseState.FAILED = 'failed';
 
 /**
  * Clear the crawl database:
@@ -225,6 +238,70 @@ gulp.task('fetch', function (){
     .pipe(crawlBase.dest());
 });
 
+
+/**
+ * parse: Parse content from fetched pages:
+ *
+ * See:
+ *
+ *  http://wiki.apache.org/nutch/bin/nutch%20parse
+ */
+
+gulp.task('parse', function (){
+  return crawlBase.src()
+
+    /**
+     * Only process data sources that have been fetched, and not parsed:
+     */
+
+    .pipe(filter(function (file){
+      return (file.data.fetchedContent.status === 200) &&
+        (!file.data.parseStatus || file.data.parseStatus.state === ParseState.NOTPARSED);
+    }))
+
+    /**
+     * Update the status to indicate that the URL is about to be fetched:
+     */
+
+    .pipe(es.map(function (file, cb){
+      var $ = cheerio.load(file.data.fetchedContent.content);
+      file.data.parse = {
+        title: $('title').text().trim(),
+        outlist: $('a').map(function (){
+          var title;
+          var _s;
+
+          if ($(this).attr('title')){
+            _s = '@title';
+            title = $(this).attr('title');
+          } else {
+            title = $(this).text().trim();
+            _s = 'text';
+            if (title === ''){
+              if ($('img', this)){
+                _s = 'img[@alt]';
+                title = $('img', this).attr('alt');
+              }
+            }
+          }
+
+          return {
+            url: url.resolve(decodeURIComponent(file.relative), $(this).attr('href') || ''),
+            _s: _s,
+            title: title
+          };
+        }).get()
+      };
+      file.data.parseStatus = new ParseState(ParseState.SUCCESS);
+      cb(null, file);
+    }))
+
+    /**
+     * Update the crawl database with any changes:
+     */
+
+    .pipe(crawlBase.dest());
+});
 
 /**
  * updatedb: Update the crawl database with the results of a fetch:
