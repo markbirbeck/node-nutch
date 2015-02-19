@@ -24,10 +24,20 @@ var cheerio = require('cheerio');
 var dir = {
   root: 'crawl'
 };
-var MAX_RETRIES = 3;
 
 var config = {
   db: {
+    fetch: {
+      retry: {
+
+        /**
+         * The maximum number of times a url that has encountered
+         * recoverable errors is generated for fetch:
+         */
+
+        max: 3
+      }
+    },
     ignore: {
       external: {
 
@@ -355,7 +365,7 @@ gulp.task('updatedb:status', function (){
       if (file.data.fetchedContent.status === 200){
         file.data.crawlState.state = CrawlState.FETCHED;
       }
-      if (file.data.fetchedContent.status === 404 || file.data.crawlState.retries > MAX_RETRIES){
+      if (file.data.fetchedContent.status === 404 || file.data.crawlState.retries > config.db.fetch.retry.max){
         file.data.crawlState.state = CrawlState.GONE;
       }
       cb(null, file);
