@@ -466,9 +466,12 @@ gulp.task('updatedb:outlinks', function (){
       return parsedInlink.hostname === parsedOutlink.hostname;
     }))
 
+    /**
+     * Normalise the URI so as to reduce possible duplications:
+     */
+
     .pipe(es.map(function (uri, cb){
       uri.path = normalize(uri.relative);
-      console.log(uri);
       cb(null, uri);
     }))
 
