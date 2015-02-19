@@ -11,6 +11,7 @@ var gutil = require('gulp-util');
 var concat = require('gulp-concat');
 var filter = require('gulp-filter');
 
+var request = require('request');
 
 /**
  * Configuration:
@@ -39,6 +40,12 @@ dir.seeds = path.join(dir.root, 'seeds');
 
 dir.CrawlList = path.join(dir.root, 'CrawlList');
 
+/**
+ * FetchedContent: The content that has been retrieved for a URL:
+ */
+
+dir.FetchedContent = path.join(dir.root, 'FetchedContent');
+
 
 /**
  * Class to handle crawl state:
@@ -49,6 +56,15 @@ var CrawlState = function (state){
 };
 CrawlState.UNFETCHED = 'unfetched';
 CrawlState.GENERATED = 'generated';
+
+/**
+ * Class to handle fetched content:
+ */
+
+var FetchedContent = function(status, content){
+  this.status = status;
+  this.content = content;
+};
 
 /**
  * Clear the crawl database:
@@ -181,4 +197,68 @@ gulp.task('generate', ['clean:CrawlList1'], function (){
     }))
     .pipe(concat(dir.CrawlList1))
     .pipe(gulp.dest(dir.CrawlList));
+});
+
+
+/**
+ * Clear the fetched content database:
+ */
+
+gulp.task('clean:FetchedContent', function (cb){
+  del(dir.FetchedContent, cb);
+});
+
+
+/**
+ * fetch: Fetch data using a list of URLs:
+ *
+ * See:
+ *
+ *  http://wiki.apache.org/nutch/bin/nutch%20fetch
+ */
+
+gulp.task('fetch', ['clean:FetchedContent'], function (){
+  return gulp.src(path.join(dir.CrawlList, '*'))
+
+    /**
+     * Input is a simple file with a URL per line, so split the file:
+     */
+
+    .pipe(through2.obj(function (file, enc, next){
+      var self = this;
+
+      file.contents
+        .toString()
+        .split(/\r?\n/)
+        .forEach(function (url){
+          self.push(url);
+        });
+        next();
+    }))
+
+    /**
+     * Retrieve the document from the URL:
+     */
+
+    .pipe(es.map(function (url, cb){
+      request(url, function (err, response, body) {
+        var status;
+
+        if (err){
+          status = err;
+          body = '';
+        } else {
+          status = response.statusCode;
+        }
+
+        var fetchedContent = new FetchedContent(status, body);
+        var file = new gutil.File({
+          path: encodeURIComponent(url),
+          contents: new Buffer(JSON.stringify( fetchedContent ))
+        });
+
+        cb(null, file);
+      });
+    }))
+    .pipe(gulp.dest(dir.FetchedContent));
 });
