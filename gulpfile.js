@@ -61,8 +61,9 @@ CrawlState.GENERATED = 'generated';
  * Class to handle fetched content:
  */
 
-var FetchedContent = function(status, content){
+var FetchedContent = function(status, headers, content){
   this.status = status;
+  this.headers = headers;
   this.content = content;
 };
 
@@ -242,16 +243,19 @@ gulp.task('fetch', ['clean:FetchedContent'], function (){
 
     .pipe(es.map(function (url, cb){
       request(url, function (err, response, body) {
+        var headers;
         var status;
 
         if (err){
           status = err;
+          headers = '';
           body = '';
         } else {
           status = response.statusCode;
+          headers = response.headers;
         }
 
-        var fetchedContent = new FetchedContent(status, body);
+        var fetchedContent = new FetchedContent(status, headers, body);
         var file = new gutil.File({
           path: encodeURIComponent(url),
           contents: new Buffer(JSON.stringify( fetchedContent ))
