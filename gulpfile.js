@@ -3,6 +3,7 @@ var Buffer = require('buffer').Buffer;
 
 var es = require('event-stream');
 var through2 = require('through2');
+var lazypipe = require('lazypipe');
 
 var del = require('del');
 
@@ -61,6 +62,18 @@ gulp.task('clean:CrawlBase', function (cb){
   del(dir.CrawlBase, cb);
 });
 
+/**
+ * Create a pipeline to update the crawl database with any changes to an entry:
+ */
+
+var crawlBase = {
+  dest: lazypipe()
+    .pipe(es.map, function (file, cb){
+      file.contents = new Buffer(JSON.stringify( file.data ));
+      cb(null, file);
+    })
+    .pipe(gulp.dest, dir.CrawlBase)
+};
 
 /**
  * inject: Insert a list of URLs into the crawl database:
@@ -95,16 +108,17 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
      */
 
     .pipe(es.map(function (url, cb){
-      var crawlState = new CrawlState();
       var file = new gutil.File({
-        path: encodeURIComponent(url),
-        contents: new Buffer(JSON.stringify( crawlState ))
+        path: encodeURIComponent(url)
       });
 
+      file.data = {
+        crawlState: new CrawlState()
+      };
       cb(null, file);
     }))
 
-    .pipe(gulp.dest(dir.CrawlBase));
+    .pipe(crawlBase.dest());
 });
 
 
@@ -125,7 +139,7 @@ gulp.task('generate', function (){
      */
 
     .pipe(es.map(function (file, cb){
-      file.crawlState = JSON.parse(file.contents.toString());
+      file.data = JSON.parse(file.contents.toString());
 
       cb(null, file);
     }))
@@ -135,7 +149,7 @@ gulp.task('generate', function (){
      */
 
     .pipe(filter(function (file){
-      return file.crawlState.state === CrawlState.UNFETCHED;
+      return file.data.crawlState.state === CrawlState.UNFETCHED;
     }))
 
     /**
@@ -143,7 +157,7 @@ gulp.task('generate', function (){
      */
 
     .pipe(es.map(function (file, cb){
-      file.crawlState.state = CrawlState.GENERATED;
+      file.data.crawlState.state = CrawlState.GENERATED;
       cb(null, file);
     }))
 
@@ -151,11 +165,7 @@ gulp.task('generate', function (){
      * Update the crawl database with any changes:
      */
 
-    .pipe(es.map(function (file, cb){
-      file.contents = new Buffer(JSON.stringify( file.crawlState ));
-      cb(null, file);
-    }))
-    .pipe(gulp.dest(dir.CrawlBase));
+    .pipe(crawlBase.dest());
 });
 
 
@@ -175,7 +185,7 @@ gulp.task('fetch', function (){
      */
 
     .pipe(es.map(function (file, cb){
-      file.crawlState = JSON.parse(file.contents.toString());
+      file.data = JSON.parse(file.contents.toString());
 
       cb(null, file);
     }))
@@ -185,7 +195,7 @@ gulp.task('fetch', function (){
      */
 
     .pipe(filter(function (file){
-      return file.crawlState.state === CrawlState.GENERATED;
+      return file.data.crawlState.state === CrawlState.GENERATED;
     }))
 
     /**
@@ -208,7 +218,7 @@ gulp.task('fetch', function (){
           headers = response.headers;
         }
 
-        file.crawlState.fetchedContent = new FetchedContent(status, headers, body);
+        file.data.fetchedContent = new FetchedContent(status, headers, body);
         cb(null, file);
       });
     }))
@@ -217,9 +227,5 @@ gulp.task('fetch', function (){
      * Update the crawl database with any changes:
      */
 
-    .pipe(es.map(function (file, cb){
-      file.contents = new Buffer(JSON.stringify( file.crawlState ));
-      cb(null, file);
-    }))
-    .pipe(gulp.dest(dir.CrawlBase));
+    .pipe(crawlBase.dest());
 });
