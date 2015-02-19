@@ -72,7 +72,15 @@ var crawlBase = {
       file.contents = new Buffer(JSON.stringify( file.data ));
       cb(null, file);
     })
-    .pipe(gulp.dest, dir.CrawlBase)
+    .pipe(gulp.dest, dir.CrawlBase),
+  src: function (){
+    return gulp.src(path.join(dir.CrawlBase, '*'))
+      .pipe(es.map(function (file, cb){
+        file.data = JSON.parse(file.contents.toString());
+
+        cb(null, file);
+      }));
+  }
 };
 
 /**
@@ -132,17 +140,7 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
  */
 
 gulp.task('generate', function (){
-  return gulp.src(path.join(dir.CrawlBase, '*'))
-
-    /**
-     * Save a bit of processing by only parsing the JSON once:
-     */
-
-    .pipe(es.map(function (file, cb){
-      file.data = JSON.parse(file.contents.toString());
-
-      cb(null, file);
-    }))
+  return crawlBase.src()
 
     /**
      * Only process data sources that haven't been fetched yet:
@@ -178,17 +176,7 @@ gulp.task('generate', function (){
  */
 
 gulp.task('fetch', function (){
-  return gulp.src(path.join(dir.CrawlBase, '*'))
-
-    /**
-     * Save a bit of processing by only parsing the JSON once:
-     */
-
-    .pipe(es.map(function (file, cb){
-      file.data = JSON.parse(file.contents.toString());
-
-      cb(null, file);
-    }))
+  return crawlBase.src()
 
     /**
      * Only process data sources that are ready to be fetched:
