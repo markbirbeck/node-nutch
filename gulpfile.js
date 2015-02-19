@@ -1,10 +1,12 @@
 var path = require('path');
 var Buffer = require('buffer').Buffer;
 var url = require('url');
+var fs = require('fs');
 
 var es = require('event-stream');
 var through2 = require('through2');
 var lazypipe = require('lazypipe');
+var runSequence = require('run-sequence');
 
 var del = require('del');
 
@@ -23,6 +25,24 @@ var dir = {
   root: 'crawl'
 };
 var MAX_RETRIES = 3;
+
+var config = {
+  db: {
+    ignore: {
+      external: {
+
+        /**
+         * If true, outlinks leading from a page to external hosts
+         * will be ignored. This is an effective way to limit the
+         * crawl to include only initially injected hosts, without
+         * creating complex URLFilters:
+         */
+
+        links: true
+      }
+    }
+  }
+};
 
 /**
  * CrawlBase: A list of all URLs we know about with their status:
@@ -311,7 +331,11 @@ gulp.task('parse', function (){
  *  http://wiki.apache.org/nutch/bin/nutch%20updatedb
  */
 
-gulp.task('updatedb', function (){
+gulp.task('updatedb', function (cb){
+  runSequence('updatedb:status', 'updatedb:outlinks', cb);
+});
+
+gulp.task('updatedb:status', function (){
   return crawlBase.src()
 
     /**
@@ -340,6 +364,83 @@ gulp.task('updatedb', function (){
     /**
      * Update the crawl database with any changes:
      */
+
+    .pipe(crawlBase.dest());
+});
+
+gulp.task('updatedb:outlinks', function (){
+  return crawlBase.src()
+
+    /**
+     * Only update pages with outlinks:
+     */
+
+    .pipe(filter(function (file){
+      return (file.data.parseStatus && (file.data.parseStatus.state === ParseState.SUCCESS)) &&
+        (file.data.parse.outlist.length);
+    }))
+
+    /**
+     * Generate an entry for each outlink:
+     */
+
+    .pipe(through2.obj(function (file, enc, next){
+      var self = this;
+
+      file.data.parse.outlist
+        .forEach(function (outlink){
+          if (outlink.url){
+            var uri = new gutil.File({
+              path: encodeURIComponent(outlink.url)
+            });
+
+            uri.data = {
+              inlink: decodeURIComponent(file.relative)
+            };
+            self.push(uri);
+          }
+        });
+        next();
+    }))
+
+    /**
+     * Check to see if we should ignore outlinks to external sites:
+     */
+
+    .pipe(filter(function (uri){
+      if (!config.db.ignore.external.links)
+        return true;
+
+      var parsedOutlink = url.parse(decodeURIComponent(uri.relative));
+      var parsedInlink = url.parse(uri.data.inlink);
+
+      return parsedInlink.hostname === parsedOutlink.hostname;
+    }))
+
+    /**
+     * Don't bother if we already have an entry in the crawl database:
+     */
+
+    .pipe(es.map(function (uri, cb){
+      fs.exists(path.join(dir.CrawlBase, uri.relative), function (exists){
+        if (exists){
+          cb();
+        } else {
+          cb(null, uri);
+        }
+      });
+    }))
+
+    /**
+     * Create a crawl state object for each URL:
+     */
+
+    .pipe(es.map(function (file, cb){
+      file.data = {
+        crawlState: new CrawlState()
+      };
+      cb(null, file);
+    }))
 
     .pipe(crawlBase.dest());
 });
