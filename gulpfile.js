@@ -373,18 +373,19 @@ gulp.task('parse', function (){
 });
 
 /**
- * updatedb: Update the crawl database with the results of a fetch:
+ * dbupdate: Updates all rows with inlinks (backlinks), fetchtime and the
+ * correct score.
  *
  * See:
  *
- *  http://wiki.apache.org/nutch/bin/nutch%20updatedb
+ *  https://wiki.apache.org/nutch/Nutch2Crawling#DbUpdate
  */
 
-gulp.task('updatedb', function (cb){
-  runSequence('updatedb:status', 'updatedb:outlinks', cb);
+gulp.task('dbupdate', function (cb){
+  runSequence('dbupdate:status', 'dbupdate:outlinks', cb);
 });
 
-gulp.task('updatedb:status', function (){
+gulp.task('dbupdate:status', function (){
   return crawlBase.src()
 
     /**
@@ -417,7 +418,7 @@ gulp.task('updatedb:status', function (){
     .pipe(crawlBase.dest());
 });
 
-gulp.task('updatedb:outlinks', function (){
+gulp.task('dbupdate:outlinks', function (){
   return crawlBase.src()
 
     /**
