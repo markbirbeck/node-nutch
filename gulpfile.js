@@ -107,9 +107,9 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
       file.contents
         .toString()
         .split(/\r?\n/)
-        .forEach(function (url){
-          if (url){
-            self.push(url);
+        .forEach(function (uri){
+          if (uri){
+            self.push(uri);
           }
         });
         next();
@@ -120,9 +120,9 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
      * Create a crawl state object for each URL:
      */
 
-    .pipe(es.map(function (url, cb){
+    .pipe(es.map(function (uri, cb){
       var file = new gutil.File({
-        path: encodeURIComponent(url)
+        path: encodeURIComponent(uri)
       });
 
       file.data = {
@@ -197,9 +197,9 @@ gulp.task('fetch', function (){
      */
 
     .pipe(es.map(function (file, cb){
-      var url = decodeURIComponent(file.relative);
+      var uri = decodeURIComponent(file.relative);
 
-      request(url, function (err, response, body) {
+      request(uri, function (err, response, body) {
         var headers;
         var status;
 
