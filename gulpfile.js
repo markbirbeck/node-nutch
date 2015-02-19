@@ -16,6 +16,7 @@ var filter = require('gulp-filter');
 
 var request = require('request');
 var cheerio = require('cheerio');
+var URI = require('URIjs');
 
 /**
  * Configuration:
@@ -23,6 +24,14 @@ var cheerio = require('cheerio');
 
 var dir = {
   root: 'crawl'
+};
+
+var BasicURLNormalizer = function (){};
+BasicURLNormalizer.prototype.normalize = function(urlString){
+  return URI(urlString)
+    .fragment('')
+    .normalize()
+    .toString();
 };
 
 var config = {
@@ -51,7 +60,24 @@ var config = {
         links: true
       }
     }
+  },
+  urlnormalizer: {
+
+    /**
+     * Order in which normalizers will run. If any of these isn't
+     * activated it will be silently skipped. If other normalizers
+     * not on the list are activated, they will run in random order
+     * after the ones specified here are run:
+     */
+
+    order: [new BasicURLNormalizer()]
   }
+};
+
+var normalize = function (urlString){
+  return config.urlnormalizer.order.reduce(function (value, normalizer){
+    return normalizer.normalize(value);
+  }, urlString);
 };
 
 /**
@@ -152,7 +178,7 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
         .split(/\r?\n/)
         .forEach(function (uri){
           if (uri){
-            self.push(uri);
+            self.push(normalize(uri));
           }
         });
         next();
@@ -425,6 +451,12 @@ gulp.task('updatedb:outlinks', function (){
       var parsedInlink = url.parse(uri.data.inlink);
 
       return parsedInlink.hostname === parsedOutlink.hostname;
+    }))
+
+    .pipe(es.map(function (uri, cb){
+      uri.path = normalize(uri.relative);
+      console.log(uri);
+      cb(null, uri);
     }))
 
     /**
