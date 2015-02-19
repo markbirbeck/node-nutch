@@ -8,7 +8,6 @@ var del = require('del');
 
 var gulp = require('gulp');
 var gutil = require('gulp-util');
-var concat = require('gulp-concat');
 var filter = require('gulp-filter');
 
 var request = require('request');
@@ -18,8 +17,7 @@ var request = require('request');
  */
 
 var dir = {
-  root: 'crawl',
-  CrawlList1: '1.txt'
+  root: 'crawl'
 };
 
 /**
@@ -33,18 +31,6 @@ dir.CrawlBase = path.join(dir.root, 'CrawlBase');
  */
 
 dir.seeds = path.join(dir.root, 'seeds');
-
-/**
- * CrawlList: A crawl list is a set of URLs that will be processed together:
- */
-
-dir.CrawlList = path.join(dir.root, 'CrawlList');
-
-/**
- * FetchedContent: The content that has been retrieved for a URL:
- */
-
-dir.FetchedContent = path.join(dir.root, 'FetchedContent');
 
 
 /**
@@ -123,23 +109,6 @@ gulp.task('inject', ['clean:CrawlBase'], function (){
 
 
 /**
- * Clear all crawl lists:
- */
-
-gulp.task('clean:CrawlList', function (cb){
-  del(dir.CrawlList, cb);
-});
-
-/**
- * Clear crawl list 1:
- */
-
-gulp.task('clean:CrawlList1', function (cb){
-  del(path.join(dir.CrawlList, dir.CrawlList1), cb);
-});
-
-
-/**
  * generate: Place a list of URLs from the crawl database into a crawl list.
  * For now we're only supporting one crawl list:
  *
@@ -148,7 +117,7 @@ gulp.task('clean:CrawlList1', function (cb){
  *  http://wiki.apache.org/nutch/bin/nutch%20generate
  */
 
-gulp.task('generate', ['clean:CrawlList1'], function (){
+gulp.task('generate', function (){
   return gulp.src(path.join(dir.CrawlBase, '*'))
 
     /**
@@ -186,27 +155,7 @@ gulp.task('generate', ['clean:CrawlList1'], function (){
       file.contents = new Buffer(JSON.stringify( file.crawlState ));
       cb(null, file);
     }))
-    .pipe(gulp.dest(dir.CrawlBase))
-
-    /**
-     * Finally, create a crawl list:
-     */
-
-    .pipe(es.map(function (file, cb){
-      file.contents = new Buffer(decodeURIComponent(file.relative));
-      cb(null, file);
-    }))
-    .pipe(concat(dir.CrawlList1))
-    .pipe(gulp.dest(dir.CrawlList));
-});
-
-
-/**
- * Clear the fetched content database:
- */
-
-gulp.task('clean:FetchedContent', function (cb){
-  del(dir.FetchedContent, cb);
+    .pipe(gulp.dest(dir.CrawlBase));
 });
 
 
@@ -218,30 +167,34 @@ gulp.task('clean:FetchedContent', function (cb){
  *  http://wiki.apache.org/nutch/bin/nutch%20fetch
  */
 
-gulp.task('fetch', ['clean:FetchedContent'], function (){
-  return gulp.src(path.join(dir.CrawlList, '*'))
+gulp.task('fetch', function (){
+  return gulp.src(path.join(dir.CrawlBase, '*'))
 
     /**
-     * Input is a simple file with a URL per line, so split the file:
+     * Save a bit of processing by only parsing the JSON once:
      */
 
-    .pipe(through2.obj(function (file, enc, next){
-      var self = this;
+    .pipe(es.map(function (file, cb){
+      file.crawlState = JSON.parse(file.contents.toString());
 
-      file.contents
-        .toString()
-        .split(/\r?\n/)
-        .forEach(function (url){
-          self.push(url);
-        });
-        next();
+      cb(null, file);
+    }))
+
+    /**
+     * Only process data sources that are ready to be fetched:
+     */
+
+    .pipe(filter(function (file){
+      return file.crawlState.state === CrawlState.GENERATED;
     }))
 
     /**
      * Retrieve the document from the URL:
      */
 
-    .pipe(es.map(function (url, cb){
+    .pipe(es.map(function (file, cb){
+      var url = decodeURIComponent(file.relative);
+
       request(url, function (err, response, body) {
         var headers;
         var status;
@@ -255,14 +208,18 @@ gulp.task('fetch', ['clean:FetchedContent'], function (){
           headers = response.headers;
         }
 
-        var fetchedContent = new FetchedContent(status, headers, body);
-        var file = new gutil.File({
-          path: encodeURIComponent(url),
-          contents: new Buffer(JSON.stringify( fetchedContent ))
-        });
-
+        file.crawlState.fetchedContent = new FetchedContent(status, headers, body);
         cb(null, file);
       });
     }))
-    .pipe(gulp.dest(dir.FetchedContent));
+
+    /**
+     * Update the crawl database with any changes:
+     */
+
+    .pipe(es.map(function (file, cb){
+      file.contents = new Buffer(JSON.stringify( file.crawlState ));
+      cb(null, file);
+    }))
+    .pipe(gulp.dest(dir.CrawlBase));
 });
