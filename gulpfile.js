@@ -274,38 +274,5 @@ gulp.task('dbupdate', function (cb){
   runSequence('dbupdate:status', 'dbupdate:outlinks', cb);
 });
 
-gulp.task('dbupdate:status', function (){
-  return crawlBase.src()
-
-    /**
-     * Only process data sources that have been recently fetched:
-     */
-
-    .pipe(filter(function (file){
-      return (file.data.crawlState.state === CrawlState.GENERATED) &&
-        (file.data.fetchedContent);
-    }))
-
-    /**
-     * Update the crawl state based on the data returned:
-     */
-
-    .pipe(es.map(function (file, cb){
-      if (file.data.fetchedContent.status === 200){
-        file.data.crawlState.state = CrawlState.FETCHED;
-      }
-      if (file.data.fetchedContent.status === 404 ||
-          file.data.crawlState.retries > config.db.fetch.retry.max){
-        file.data.crawlState.state = CrawlState.GONE;
-      }
-      cb(null, file);
-    }))
-
-    /**
-     * Update the crawl database with any changes:
-     */
-
-    .pipe(crawlBase.dest());
-});
-
+gulp.task('dbupdate:status', tasks.dbupdate.status);
 gulp.task('dbupdate:outlinks', tasks.dbupdate.outlinks);

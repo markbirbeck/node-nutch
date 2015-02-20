@@ -14,6 +14,40 @@ var ParseState = require('../models/ParseState');
 var CrawlState = require('../models/CrawlState');
 var config = require('../config/config');
 
+var status = function (){
+  return crawlBase.src()
+
+    /**
+     * Only process data sources that have been recently fetched:
+     */
+
+    .pipe(filter(function (file){
+      return (file.data.crawlState.state === CrawlState.GENERATED) &&
+        (file.data.fetchedContent);
+    }))
+
+    /**
+     * Update the crawl state based on the data returned:
+     */
+
+    .pipe(es.map(function (file, cb){
+      if (file.data.fetchedContent.status === 200){
+        file.data.crawlState.state = CrawlState.FETCHED;
+      }
+      if (file.data.fetchedContent.status === 404 ||
+          file.data.crawlState.retries > config.db.fetch.retry.max){
+        file.data.crawlState.state = CrawlState.GONE;
+      }
+      cb(null, file);
+    }))
+
+    /**
+     * Update the crawl database with any changes:
+     */
+
+    .pipe(crawlBase.dest());
+};
+
 var outlinks = function (){
   return crawlBase.src()
 
@@ -102,4 +136,5 @@ var outlinks = function (){
     .pipe(crawlBase.dest());
 };
 
+exports.status = status;
 exports.outlinks = outlinks;
