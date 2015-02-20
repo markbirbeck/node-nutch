@@ -22,7 +22,8 @@ var outlinks = function (){
      */
 
     .pipe(filter(function (file){
-      return (file.data.parseStatus && (file.data.parseStatus.state === ParseState.SUCCESS)) &&
+      return (file.data.parseStatus &&
+        (file.data.parseStatus.state === ParseState.SUCCESS)) &&
         (file.data.parse.outlist.length);
     }))
 
@@ -78,7 +79,8 @@ var outlinks = function (){
      */
 
     .pipe(es.map(function (uri, cb){
-      fs.exists(path.join(config.dir.CrawlBase, uri.relative), function (exists){
+      fs.exists(path.join(config.dir.CrawlBase, uri.relative),
+          function (exists){
         if (exists){
           cb();
         } else {

@@ -77,7 +77,8 @@ gulp.task('inject', function (){
      */
 
     .pipe(es.map(function (uri, cb){
-      fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)), function (exists){
+      fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)),
+          function (exists){
         if (exists){
           cb();
         } else {
@@ -213,7 +214,8 @@ gulp.task('parse', function (){
 
     .pipe(filter(function (file){
       return (file.data.fetchedContent.status === 200) &&
-        (!file.data.parseStatus || file.data.parseStatus.state === ParseState.NOTPARSED);
+        (!file.data.parseStatus ||
+          file.data.parseStatus.state === ParseState.NOTPARSED);
     }))
 
     /**
@@ -243,7 +245,8 @@ gulp.task('parse', function (){
           }
 
           return {
-            url: url.resolve(decodeURIComponent(file.relative), $(this).attr('href') || ''),
+            url: url.resolve(decodeURIComponent(file.relative),
+              $(this).attr('href') || ''),
             _s: _s,
             title: title
           };
@@ -293,7 +296,8 @@ gulp.task('dbupdate:status', function (){
       if (file.data.fetchedContent.status === 200){
         file.data.crawlState.state = CrawlState.FETCHED;
       }
-      if (file.data.fetchedContent.status === 404 || file.data.crawlState.retries > config.db.fetch.retry.max){
+      if (file.data.fetchedContent.status === 404 ||
+          file.data.crawlState.retries > config.db.fetch.retry.max){
         file.data.crawlState.state = CrawlState.GONE;
       }
       cb(null, file);
