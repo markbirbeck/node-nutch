@@ -110,7 +110,7 @@ gulp.task('generate', tasks.generate);
  *
  * See:
  *
- *  http://wiki.apache.org/nutch/bin/nutch%20fetch
+ *  https://wiki.apache.org/nutch/Nutch2Crawling#Fetch
  */
 
 gulp.task('fetch', tasks.fetch);

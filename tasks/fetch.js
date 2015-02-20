@@ -13,7 +13,7 @@ var FetchedContent = require('../models/FetchedContent');
  *
  * See:
  *
- *  http://wiki.apache.org/nutch/bin/nutch%20fetch
+ *  https://wiki.apache.org/nutch/Nutch2Crawling#Fetch
  */
 
 var fetch = function (){
