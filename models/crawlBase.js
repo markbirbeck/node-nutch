@@ -15,6 +15,8 @@ module.exports = {
   dest: lazypipe()
     .pipe(es.map, function (file, cb){
       file.contents = new Buffer(JSON.stringify( file.data ));
+      file.path = path.join(config.dir.CrawlBase,
+        encodeURIComponent(file.data.url));
       cb(null, file);
     })
     .pipe(gulp.dest, config.dir.CrawlBase),

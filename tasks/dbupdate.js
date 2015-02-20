@@ -38,12 +38,13 @@ var outlinks = function (){
         .forEach(function (outlink){
           if (outlink.url){
             var uri = new gutil.File({
-              path: encodeURIComponent(outlink.url)
+              base: config.dir.CrawlBase
             });
 
             uri.data = {
-              inlink: decodeURIComponent(file.relative)
+              inlink: file.data.url
             };
+            uri.data.url = outlink.url;
             self.push(uri);
           }
         });
@@ -59,7 +60,7 @@ var outlinks = function (){
         return true;
       }
 
-      var parsedOutlink = url.parse(decodeURIComponent(uri.relative));
+      var parsedOutlink = url.parse(uri.data.url);
       var parsedInlink = url.parse(uri.data.inlink);
 
       return parsedInlink.hostname === parsedOutlink.hostname;
@@ -70,7 +71,7 @@ var outlinks = function (){
      */
 
     .pipe(es.map(function (uri, cb){
-      uri.path = normalize(uri.relative);
+      uri.data.url = normalize(uri.data.url);
       cb(null, uri);
     }))
 
@@ -79,8 +80,8 @@ var outlinks = function (){
      */
 
     .pipe(es.map(function (uri, cb){
-      fs.exists(path.join(config.dir.CrawlBase, uri.relative),
-          function (exists){
+      fs.exists(path.join(config.dir.CrawlBase,
+          encodeURIComponent(uri.data.url)), function (exists){
         if (exists){
           cb();
         } else {
@@ -94,9 +95,7 @@ var outlinks = function (){
      */
 
     .pipe(es.map(function (file, cb){
-      file.data = {
-        crawlState: new CrawlState()
-      };
+      file.data.crawlState = new CrawlState();
       cb(null, file);
     }))
 

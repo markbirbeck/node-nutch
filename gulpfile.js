@@ -93,12 +93,13 @@ gulp.task('inject', function (){
 
     .pipe(es.map(function (uri, cb){
       var file = new gutil.File({
-        path: encodeURIComponent(uri)
+        base: config.dir.CrawlBase
       });
 
       file.data = {
         crawlState: new CrawlState()
       };
+      file.data.url = uri;
       cb(null, file);
     }))
 
@@ -168,9 +169,7 @@ gulp.task('fetch', function (){
      */
 
     .pipe(es.map(function (file, cb){
-      var uri = decodeURIComponent(file.relative);
-
-      request(uri, function (err, response, body) {
+      request(file.data.url, function (err, response, body) {
         var headers;
         var status;
 
@@ -245,8 +244,7 @@ gulp.task('parse', function (){
           }
 
           return {
-            url: url.resolve(decodeURIComponent(file.relative),
-              $(this).attr('href') || ''),
+            url: url.resolve(file.data.url, $(this).attr('href') || ''),
             _s: _s,
             title: title
           };
