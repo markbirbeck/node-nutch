@@ -35,16 +35,36 @@ var status = function (){
     .pipe(es.map(function (file, cb){
       if (file.data.fetchedContent.status === 200){
         file.data.crawlState.state = CrawlState.FETCHED;
-        file.data.crawlState.fetchTime =
-          now + (config.db.fetch.interval.default * 1000);
       }
       if (file.data.fetchedContent.status === 404 ||
           file.data.fetchedContent.status.code === 'ENOTFOUND' ||
           file.data.crawlState.retries > config.db.fetch.retry.max){
         file.data.crawlState.state = CrawlState.GONE;
-        file.data.crawlState.fetchTime =
-          now + (config.db.fetch.interval.max * 1000);
       }
+      cb(null, file);
+    }))
+
+    /**
+     * Update the fetch time based on the status:
+     */
+
+    .pipe(es.map(function (file, cb){
+      var offset;
+
+      switch (file.data.crawlState.state){
+        case CrawlState.FETCHED:
+          offset = config.db.fetch.interval.default;
+          break;
+
+        case CrawlState.GONE:
+          offset = config.db.fetch.interval.max;
+          break;
+
+        default:
+          offset = 0;
+          break;
+      }
+      file.data.crawlState.fetchTime = now + (offset * 1000);
       cb(null, file);
     }))
 
