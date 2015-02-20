@@ -39,6 +39,7 @@ var status = function (){
           now + (config.db.fetch.interval.default * 1000);
       }
       if (file.data.fetchedContent.status === 404 ||
+          file.data.fetchedContent.status.code === 'ENOTFOUND' ||
           file.data.crawlState.retries > config.db.fetch.retry.max){
         file.data.crawlState.state = CrawlState.GONE;
         file.data.crawlState.fetchTime =
