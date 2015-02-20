@@ -35,7 +35,7 @@ var inject = function (){
         .toString()
         .split(/\r?\n/)
         .forEach(function (uri){
-          if (uri){
+          if (uri && uri[0] !== '#'){
             self.push(normalize(uri));
           }
         });
