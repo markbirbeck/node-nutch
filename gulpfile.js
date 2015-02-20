@@ -21,19 +21,7 @@ var CrawlState = require('./models/crawlState');
 var ParseState = require('./models/parseState');
 var config = require('./config/config');
 
-var request = require('request');
 var cheerio = require('cheerio');
-
-
-/**
- * Class to handle fetched content:
- */
-
-var FetchedContent = function(status, headers, content){
-  this.status = status;
-  this.headers = headers;
-  this.content = content;
-};
 
 /**
  * Clear the crawl database:
@@ -129,47 +117,7 @@ gulp.task('generate', tasks.generate);
  *  http://wiki.apache.org/nutch/bin/nutch%20fetch
  */
 
-gulp.task('fetch', function (){
-  return crawlBase.src()
-
-    /**
-     * Only process data sources that are ready to be fetched:
-     */
-
-    .pipe(filter(function (file){
-      return file.data.crawlState.state === CrawlState.GENERATED;
-    }))
-
-    /**
-     * Retrieve the document from the URL:
-     */
-
-    .pipe(es.map(function (file, cb){
-      request(file.data.url, function (err, response, body) {
-        var headers;
-        var status;
-
-        if (err){
-          status = err;
-          headers = '';
-          body = '';
-        } else {
-          status = response.statusCode;
-          headers = response.headers;
-        }
-
-        file.data.fetchedContent = new FetchedContent(status, headers, body);
-        file.data.crawlState.retries++;
-        cb(null, file);
-      });
-    }))
-
-    /**
-     * Update the crawl database with any changes:
-     */
-
-    .pipe(crawlBase.dest());
-});
+gulp.task('fetch', tasks.fetch);
 
 
 /**
