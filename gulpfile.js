@@ -1,11 +1,9 @@
 var path = require('path');
-var Buffer = require('buffer').Buffer;
 var url = require('url');
 var fs = require('fs');
 
 var es = require('event-stream');
 var through2 = require('through2');
-var lazypipe = require('lazypipe');
 var runSequence = require('run-sequence');
 
 var del = require('del');
@@ -14,96 +12,18 @@ var gulp = require('gulp');
 var gutil = require('gulp-util');
 var filter = require('gulp-filter');
 
+var requireDir = require('require-dir');
+var tasks = requireDir('./tasks');
+
+var normalize = require('./plugins/normalize');
+var crawlBase = require('./models/crawlBase');
+var CrawlState = require('./models/crawlState');
+var ParseState = require('./models/parseState');
+var config = require('./config/config');
+
 var request = require('request');
 var cheerio = require('cheerio');
-var URI = require('URIjs');
 
-/**
- * Configuration:
- */
-
-var dir = {
-  root: 'crawl'
-};
-
-var BasicURLNormalizer = function (){};
-BasicURLNormalizer.prototype.normalize = function(urlString){
-  return URI(urlString)
-    .fragment('')
-    .normalize()
-    .toString();
-};
-
-var config = {
-  db: {
-    fetch: {
-      retry: {
-
-        /**
-         * The maximum number of times a url that has encountered
-         * recoverable errors is generated for fetch:
-         */
-
-        max: 3
-      }
-    },
-    ignore: {
-      external: {
-
-        /**
-         * If true, outlinks leading from a page to external hosts
-         * will be ignored. This is an effective way to limit the
-         * crawl to include only initially injected hosts, without
-         * creating complex URLFilters:
-         */
-
-        links: true
-      }
-    }
-  },
-  urlnormalizer: {
-
-    /**
-     * Order in which normalizers will run. If any of these isn't
-     * activated it will be silently skipped. If other normalizers
-     * not on the list are activated, they will run in random order
-     * after the ones specified here are run:
-     */
-
-    order: [new BasicURLNormalizer()]
-  }
-};
-
-var normalize = function (urlString){
-  return config.urlnormalizer.order.reduce(function (value, normalizer){
-    return normalizer.normalize(value);
-  }, urlString);
-};
-
-/**
- * CrawlBase: A list of all URLs we know about with their status:
- */
-
-dir.CrawlBase = path.join(dir.root, 'CrawlBase');
-
-/**
- * seeds: A set of text files each of which contains URLs:
- */
-
-dir.seeds = path.join(dir.root, 'seeds');
-
-
-/**
- * Class to handle crawl state:
- */
-
-var CrawlState = function (state){
-  this.state = state || CrawlState.UNFETCHED;
-};
-CrawlState.UNFETCHED = 'unfetched';
-CrawlState.GENERATED = 'generated';
-CrawlState.FETCHED = 'fetched';
-CrawlState.GONE = 'gone';
 
 /**
  * Class to handle fetched content:
@@ -116,44 +36,12 @@ var FetchedContent = function(status, headers, content){
 };
 
 /**
- * Class to handle parse state:
- */
-
-var ParseState = function (state){
-  this.state = state || ParseState.NOTPARSED;
-};
-ParseState.NOTPARSED = 'notparsed';
-ParseState.SUCCESS = 'success';
-ParseState.FAILED = 'failed';
-
-/**
  * Clear the crawl database:
  */
 
 gulp.task('clean:CrawlBase', function (cb){
-  del(dir.CrawlBase, cb);
+  del(config.dir.CrawlBase, cb);
 });
-
-/**
- * Create a pipeline to update the crawl database with any changes to an entry:
- */
-
-var crawlBase = {
-  dest: lazypipe()
-    .pipe(es.map, function (file, cb){
-      file.contents = new Buffer(JSON.stringify( file.data ));
-      cb(null, file);
-    })
-    .pipe(gulp.dest, dir.CrawlBase),
-  src: function (){
-    return gulp.src(path.join(dir.CrawlBase, '*'))
-      .pipe(es.map(function (file, cb){
-        file.data = JSON.parse(file.contents.toString());
-
-        cb(null, file);
-      }));
-  }
-};
 
 /**
  * inject: Insert a list of URLs into the crawl database:
@@ -164,7 +52,7 @@ var crawlBase = {
  */
 
 gulp.task('inject', function (){
-  return gulp.src(path.join(dir.seeds, '*'))
+  return gulp.src(path.join(config.dir.seeds, '*'))
 
     /**
      * Input is a simple file with a URL per line, so split the file:
@@ -189,7 +77,7 @@ gulp.task('inject', function (){
      */
 
     .pipe(es.map(function (uri, cb){
-      fs.exists(path.join(dir.CrawlBase, encodeURIComponent(uri)), function (exists){
+      fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)), function (exists){
         if (exists){
           cb();
         } else {
@@ -418,88 +306,4 @@ gulp.task('dbupdate:status', function (){
     .pipe(crawlBase.dest());
 });
 
-gulp.task('dbupdate:outlinks', function (){
-  return crawlBase.src()
-
-    /**
-     * Only update pages with outlinks:
-     */
-
-    .pipe(filter(function (file){
-      return (file.data.parseStatus && (file.data.parseStatus.state === ParseState.SUCCESS)) &&
-        (file.data.parse.outlist.length);
-    }))
-
-    /**
-     * Generate an entry for each outlink:
-     */
-
-    .pipe(through2.obj(function (file, enc, next){
-      var self = this;
-
-      file.data.parse.outlist
-        .forEach(function (outlink){
-          if (outlink.url){
-            var uri = new gutil.File({
-              path: encodeURIComponent(outlink.url)
-            });
-
-            uri.data = {
-              inlink: decodeURIComponent(file.relative)
-            };
-            self.push(uri);
-          }
-        });
-        next();
-    }))
-
-    /**
-     * Check to see if we should ignore outlinks to external sites:
-     */
-
-    .pipe(filter(function (uri){
-      if (!config.db.ignore.external.links)
-        return true;
-
-      var parsedOutlink = url.parse(decodeURIComponent(uri.relative));
-      var parsedInlink = url.parse(uri.data.inlink);
-
-      return parsedInlink.hostname === parsedOutlink.hostname;
-    }))
-
-    /**
-     * Normalise the URI so as to reduce possible duplications:
-     */
-
-    .pipe(es.map(function (uri, cb){
-      uri.path = normalize(uri.relative);
-      cb(null, uri);
-    }))
-
-    /**
-     * Don't bother if we already have an entry in the crawl database:
-     */
-
-    .pipe(es.map(function (uri, cb){
-      fs.exists(path.join(dir.CrawlBase, uri.relative), function (exists){
-        if (exists){
-          cb();
-        } else {
-          cb(null, uri);
-        }
-      });
-    }))
-
-    /**
-     * Create a crawl state object for each URL:
-     */
-
-    .pipe(es.map(function (file, cb){
-      file.data = {
-        crawlState: new CrawlState()
-      };
-      cb(null, file);
-    }))
-
-    .pipe(crawlBase.dest());
-});
+gulp.task('dbupdate:outlinks', tasks.dbupdate.outlinks);
