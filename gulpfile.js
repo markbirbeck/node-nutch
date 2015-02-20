@@ -30,6 +30,15 @@ gulp.task('inject', tasks.inject);
 
 
 /**
+ * crawl: Perform a whole cycle of generate, fetch, parse and dbupdate:
+ */
+
+gulp.task('crawl', function (cb){
+  runSequence('generate', 'fetch', 'parse', 'dbupdate', cb);
+});
+
+
+/**
  * generate: Creates a new batch. Selects urls to fetch from the webtable
  * (or: marks urls in the webtable which need to be fetched).
  *
