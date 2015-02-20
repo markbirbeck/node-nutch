@@ -17,6 +17,8 @@ var FetchedContent = require('../models/FetchedContent');
  */
 
 var fetch = function (){
+  var now = Date.now();
+
   return crawlBase.src()
 
     /**
@@ -47,6 +49,7 @@ var fetch = function (){
 
         file.data.fetchedContent = new FetchedContent(status, headers, body);
         file.data.crawlState.retries++;
+        file.data.crawlState.fetchTime = now;
         cb(null, file);
       });
     }))

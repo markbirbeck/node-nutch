@@ -15,6 +15,8 @@ var CrawlState = require('../models/CrawlState');
 var config = require('../config/config');
 
 var status = function (){
+  var now = Date.now();
+
   return crawlBase.src()
 
     /**
@@ -33,10 +35,14 @@ var status = function (){
     .pipe(es.map(function (file, cb){
       if (file.data.fetchedContent.status === 200){
         file.data.crawlState.state = CrawlState.FETCHED;
+        file.data.crawlState.fetchTime =
+          now + (config.db.fetch.interval.default * 1000);
       }
       if (file.data.fetchedContent.status === 404 ||
           file.data.crawlState.retries > config.db.fetch.retry.max){
         file.data.crawlState.state = CrawlState.GONE;
+        file.data.crawlState.fetchTime =
+          now + (config.db.fetch.interval.max * 1000);
       }
       cb(null, file);
     }))

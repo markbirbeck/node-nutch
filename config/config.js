@@ -22,6 +22,22 @@ var config = {
   dir: dir,
   db: {
     fetch: {
+      interval: {
+
+        /**
+         * The default number of seconds between re-fetches of a page (30 days):
+         */
+
+        default: 2592000,
+
+        /**
+         * The maximum number of seconds between re-fetches of a page (90 days).
+         * After this period every page in the db will be re-tried, no matter
+         * what is its status:
+         */
+
+        max: 7776000
+      },
       retry: {
 
         /**

@@ -22,6 +22,8 @@ var config = require('../config/config');
  */
 
 var inject = function (){
+  var now = Date.now();
+
   return gulp.src(path.join(config.dir.seeds, '*'))
 
     /**
@@ -67,7 +69,7 @@ var inject = function (){
       });
 
       file.data = {
-        crawlState: new CrawlState()
+        crawlState: new CrawlState(now)
       };
       file.data.url = uri;
       cb(null, file);

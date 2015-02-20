@@ -2,8 +2,9 @@
  * Class to handle crawl state:
  */
 
-var CrawlState = function (state){
-  this.state = state || CrawlState.UNFETCHED;
+var CrawlState = function (now){
+  this.state = CrawlState.UNFETCHED;
+  this.fetchTime = now;
 };
 
 CrawlState.UNFETCHED = 'unfetched';
