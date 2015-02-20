@@ -62,6 +62,14 @@ var outlinks = function (){
     }))
 
     /**
+     * Check to see if we should ignore outlinks:
+     */
+
+    .pipe(filter(function (){
+      return config.db.update.additions.allowed;
+    }))
+
+    /**
      * Generate an entry for each outlink:
      */
 

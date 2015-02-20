@@ -44,6 +44,18 @@ var config = {
 
         links: true
       }
+    },
+    update: {
+      additions: {
+
+        /**
+         * If true, updatedb will add newly discovered URLs, if false
+         * only already existing URLs in the CrawlDb will be updated
+         * and no new URLs will be added:
+         */
+
+        allowed: false
+      }
     }
   },
   urlnormalizer: {
