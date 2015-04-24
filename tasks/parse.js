@@ -17,7 +17,7 @@ var cheerio = require('cheerio');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Parse
  */
 
-var parse = function (){
+var parse = function (customParser){
   return crawlBase.src()
 
     /**
@@ -64,6 +64,22 @@ var parse = function (){
         }).get()
       };
       file.data.parseStatus = new ParseState(ParseState.SUCCESS);
+      cb(null, file);
+    }))
+
+    /**
+     * Call any custom parser:
+     */
+
+    .pipe(es.map(function (file, cb){
+      if (customParser){
+        var customParse = customParser(file.data.fetchedContent.content);
+
+        if (customParse){
+          file.data.customParse = customParse;
+          file.data.customParseStatus = new ParseState(ParseState.SUCCESS);
+        }
+      }
       cb(null, file);
     }))
 

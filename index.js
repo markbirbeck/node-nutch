@@ -7,7 +7,7 @@ var tasks = requireDir('./tasks');
 
 var config = require('./config/config');
 
-var addTasks = function (gulp){
+var addTasks = function (gulp, customParser, customStore){
 
   /**
    * Clear the crawl database:
@@ -33,7 +33,7 @@ var addTasks = function (gulp){
    */
 
   gulp.task('crawl', function (cb){
-    runSequence('generate', 'fetch', 'parse', 'dbupdate', cb);
+    runSequence('generate', 'fetch', 'parse', 'dbupdate', cb).use(gulp);
   });
 
 
@@ -70,8 +70,7 @@ var addTasks = function (gulp){
    *  https://wiki.apache.org/nutch/Nutch2Crawling#Parse
    */
 
-  gulp.task('parse', tasks.parse);
-
+  gulp.task('parse', function () { return tasks.parse(customParser); });
 
   /**
    * dbupdate: Updates all rows with inlinks (backlinks), fetchtime and the
@@ -83,7 +82,7 @@ var addTasks = function (gulp){
    */
 
   gulp.task('dbupdate', function (cb){
-    runSequence('dbupdate:status', 'dbupdate:outlinks', cb);
+    runSequence('dbupdate:status', 'dbupdate:outlinks', cb).use(gulp);
   });
 
   gulp.task('dbupdate:status', tasks.dbupdate.status);
