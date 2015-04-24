@@ -7,7 +7,7 @@ var tasks = requireDir('./tasks');
 
 var config = require('./config/config');
 
-var addTasks = function (gulp, customParser, customStore){
+var addTasks = function (gulp, customParser, customExtractor, customStore){
 
   /**
    * Clear the crawl database:
@@ -71,6 +71,10 @@ var addTasks = function (gulp, customParser, customStore){
    */
 
   gulp.task('parse', function () { return tasks.parse(customParser); });
+
+  gulp.task('extract', function () {
+    return tasks.extract(customExtractor, customStore);
+  });
 
   /**
    * dbupdate: Updates all rows with inlinks (backlinks), fetchtime and the
