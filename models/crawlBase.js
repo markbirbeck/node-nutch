@@ -5,7 +5,9 @@ var es = require('event-stream');
 var lazypipe = require('lazypipe');
 
 var gulp = require('gulp');
+var gutil = require('gulp-util');
 
+var CrawlState = require('./crawlState');
 var config = require('../config/config');
 
 /**
@@ -13,6 +15,17 @@ var config = require('../config/config');
  */
 
 module.exports = {
+  crawlState: function(t, uri){
+    var file = new gutil.File({
+      base: config.dir.CrawlBase
+    });
+
+    file.data = {
+      crawlState: new CrawlState(t)
+    };
+    file.data.url = uri;
+    return file;
+  },
   dest: lazypipe()
     .pipe(es.map, function (file, cb){
       file.contents = new Buffer(JSON.stringify( file.data ));

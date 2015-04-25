@@ -4,10 +4,8 @@ var es = require('event-stream');
 var through2 = require('through2');
 
 var gulp = require('gulp');
-var gutil = require('gulp-util');
 
 var crawlBase = require('../models/crawlBase');
-var CrawlState = require('../models/crawlState');
 var normalize = require('../plugins/normalize');
 
 var config = require('../config/config');
@@ -62,15 +60,7 @@ var inject = function (){
      */
 
     .pipe(es.map(function (uri, cb){
-      var file = new gutil.File({
-        base: config.dir.CrawlBase
-      });
-
-      file.data = {
-        crawlState: new CrawlState(now)
-      };
-      file.data.url = uri;
-      cb(null, file);
+      cb(null, crawlBase.crawlState(now, uri));
     }))
 
     .pipe(crawlBase.dest());
