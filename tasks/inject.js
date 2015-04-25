@@ -5,7 +5,6 @@ var through2 = require('through2');
 
 var gulp = require('gulp');
 
-var crawlBase = require('../models/crawlBase');
 var normalize = require('../plugins/normalize');
 
 var config = require('../config/config');
@@ -18,7 +17,7 @@ var config = require('../config/config');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Introduction
  */
 
-var inject = function (){
+var inject = function (crawlBase){
   var now = Date.now();
 
   return gulp.src(path.join(config.dir.seeds, '*'))

@@ -7,6 +7,8 @@ var tasks = requireDir('./tasks');
 
 var config = require('./config/config');
 
+var crawlBase = require('./models/crawlBase');
+
 var addTasks = function (gulp, customParser, customExtractor, customStore){
 
   /**
@@ -25,7 +27,9 @@ var addTasks = function (gulp, customParser, customExtractor, customStore){
    *  https://wiki.apache.org/nutch/Nutch2Crawling#Introduction
    */
 
-  gulp.task('inject', tasks.inject);
+  gulp.task('inject', function (cb){
+    tasks.inject(crawlBase, cb);
+  });
 
 
   /**
