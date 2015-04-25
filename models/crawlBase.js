@@ -1,4 +1,5 @@
 var Buffer = require('buffer').Buffer;
+var fs = require('fs');
 var path = require('path');
 var es = require('event-stream');
 var lazypipe = require('lazypipe');
@@ -20,6 +21,9 @@ module.exports = {
       cb(null, file);
     })
     .pipe(gulp.dest, config.dir.CrawlBase),
+  exists: function(uri, cb){
+    fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)), cb);
+  },
   src: function (){
     return gulp.src(path.join(config.dir.CrawlBase, '*'))
       .pipe(es.map(function (file, cb){

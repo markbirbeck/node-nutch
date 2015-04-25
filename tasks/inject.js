@@ -1,5 +1,4 @@
 var path = require('path');
-var fs = require('fs');
 
 var es = require('event-stream');
 var through2 = require('through2');
@@ -49,8 +48,7 @@ var inject = function (){
      */
 
     .pipe(es.map(function (uri, cb){
-      fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)),
-          function (exists){
+      crawlBase.exists(uri, function (exists){
         if (exists){
           cb();
         } else {
