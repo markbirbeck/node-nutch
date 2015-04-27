@@ -8,9 +8,15 @@ var dir = {
 
 /**
  * CrawlBase: A list of all URLs we know about with their status:
+ *
+ * TODO: Allow options to be overridden in app that is using node-nutch.
+ *
+ * To use the file system change the value to:
+ *
+ *  dir.CrawlBase = path.join(dir.root, 'CrawlBase');
  */
 
-dir.CrawlBase = path.join(dir.root, 'CrawlBase');
+dir.CrawlBase = 's3://calendar.place/CrawlBase';
 
 /**
  * seeds: A set of text files each of which contains URLs:

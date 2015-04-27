@@ -11,16 +11,19 @@
   "dependencies": {
     "URIjs": "~1.14.1",
     "cheerio": "~0.18.0",
+    "config": "^1.12.0",
     "del": "~1.1.1",
     "event-stream": "~3.2.2",
     "gulp": "~3.8.11",
     "gulp-filter": "~2.0.2",
     "gulp-util": "~3.0.3",
+    "js-yaml": "^3.3.0",
     "lazypipe": "~0.2.2",
     "request": "~2.53.0",
     "require-dir": "~0.1.0",
     "run-sequence": "~1.0.2",
     "through2": "~0.6.3",
-    "uuid": "^2.0.1"
+    "uuid": "^2.0.1",
+    "vinyl-s3": "^0.2.5"
   }
 }

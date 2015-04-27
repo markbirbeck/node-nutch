@@ -7,7 +7,8 @@ var tasks = requireDir('./tasks');
 
 var config = require('./config/config');
 
-var crawlBase = require('./models/crawlBase')();
+var s3 = require('vinyl-s3');
+var crawlBase = require('./models/crawlBase')(s3);
 
 var addTasks = function (gulp, customParser, customExtractor, customStore){
 
