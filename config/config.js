@@ -80,6 +80,15 @@ var config = {
       }
     }
   },
+
+  /**
+   * TODO: Allow options to be overridden in app that is using node-nutch.
+   */
+
+  elastic: {
+    host: 'https://8gpo2qyg:r16yg5bb1pk09vgh@cherry-9017002.us-east-1.bonsai.io',
+    log: 'trace'
+  },
   urlnormalizer: {
 
     /**

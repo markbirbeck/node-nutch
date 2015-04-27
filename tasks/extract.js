@@ -10,7 +10,9 @@ var uuid = require('uuid');
 
 var ParseState = require('../models/parseState');
 
-var extract = function (crawlBase, customExtractor, customStore){
+var config = require('../config/config');
+
+var extract = function (crawlBase, customExtractor){
   return crawlBase.src()
 
     /**
@@ -64,16 +66,17 @@ var extract = function (crawlBase, customExtractor, customStore){
      * Store each line of input:
      */
 
-    // .pipe(
-    //   elasticsearch.dest({
-    //     index: 'calendar.place',
-    //     type: 'event',
-    //   }, {
-    //     host: 'https://8gpo2qyg:r16yg5bb1pk09vgh@cherry-9017002.us-east-1.bonsai.io',
-    //     log: 'trace'
-    //   })
-    // )
-    .pipe(customStore())
+    .pipe(elasticsearch.dest({
+
+        /**
+         * [TODO] Sort out configuration.
+         */
+
+        index: 'calendar.place',
+        type: 'event',
+      },
+      config.elastic
+    ))
 
     /**
      * Update the crawl database with any changes:
