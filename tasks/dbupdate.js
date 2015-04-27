@@ -9,12 +9,11 @@ var gutil = require('gulp-util');
 var filter = require('gulp-filter');
 
 var normalize = require('../plugins/normalize');
-var crawlBase = require('../models/crawlBase');
 var ParseState = require('../models/ParseState');
 var CrawlState = require('../models/CrawlState');
 var config = require('../config/config');
 
-var status = function (){
+var status = function (crawlBase){
   var now = Date.now();
 
   return crawlBase.src()
@@ -75,7 +74,7 @@ var status = function (){
     .pipe(crawlBase.dest());
 };
 
-var outlinks = function (){
+var outlinks = function (crawlBase){
   return crawlBase.src()
 
     /**

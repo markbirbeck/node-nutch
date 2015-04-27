@@ -8,10 +8,9 @@ var filter = require('gulp-filter');
 var elasticsearch = require('vinyl-elasticsearch');
 var uuid = require('uuid');
 
-var crawlBase = require('../models/crawlBase');
 var ParseState = require('../models/parseState');
 
-var extract = function (customExtractor, customStore){
+var extract = function (crawlBase, customExtractor, customStore){
   return crawlBase.src()
 
     /**

@@ -2,7 +2,6 @@ var es = require('event-stream');
 
 var filter = require('gulp-filter');
 
-var crawlBase = require('../models/crawlBase');
 var CrawlState = require('../models/CrawlState');
 
 /**
@@ -16,7 +15,7 @@ var CrawlState = require('../models/CrawlState');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Generate
  */
 
-var generate = function (){
+var generate = function (crawlBase){
   var now = Date.now();
 
   return crawlBase.src()

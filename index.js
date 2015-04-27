@@ -7,7 +7,7 @@ var tasks = requireDir('./tasks');
 
 var config = require('./config/config');
 
-var crawlBase = require('./models/crawlBase');
+var crawlBase = require('./models/crawlBase')();
 
 var addTasks = function (gulp, customParser, customExtractor, customStore){
 
@@ -52,7 +52,9 @@ var addTasks = function (gulp, customParser, customExtractor, customStore){
    *  https://wiki.apache.org/nutch/Nutch2Crawling#Generate
    */
 
-  gulp.task('generate', tasks.generate);
+  gulp.task('generate', function (cb){
+    tasks.generate(crawlBase, cb);
+  });
 
 
   /**
@@ -63,7 +65,9 @@ var addTasks = function (gulp, customParser, customExtractor, customStore){
    *  https://wiki.apache.org/nutch/Nutch2Crawling#Fetch
    */
 
-  gulp.task('fetch', tasks.fetch);
+  gulp.task('fetch', function (cb){
+    tasks.fetch(crawlBase, cb);
+  });
 
 
   /**
@@ -74,10 +78,12 @@ var addTasks = function (gulp, customParser, customExtractor, customStore){
    *  https://wiki.apache.org/nutch/Nutch2Crawling#Parse
    */
 
-  gulp.task('parse', function () { return tasks.parse(customParser); });
+  gulp.task('parse', function () {
+    return tasks.parse(crawlBase, customParser);
+  });
 
   gulp.task('extract', function () {
-    return tasks.extract(customExtractor, customStore);
+    return tasks.extract(crawlBase, customExtractor, customStore);
   });
 
   /**
@@ -93,8 +99,12 @@ var addTasks = function (gulp, customParser, customExtractor, customStore){
     runSequence('dbupdate:status', 'dbupdate:outlinks', cb).use(gulp);
   });
 
-  gulp.task('dbupdate:status', tasks.dbupdate.status);
-  gulp.task('dbupdate:outlinks', tasks.dbupdate.outlinks);
+  gulp.task('dbupdate:status', function () {
+    return tasks.dbupdate.status(crawlBase);
+  });
+  gulp.task('dbupdate:outlinks', function () {
+    return tasks.dbupdate.outlinks(crawlBase);
+  });
 };
 
 exports.addTasks = addTasks;

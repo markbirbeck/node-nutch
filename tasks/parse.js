@@ -4,7 +4,6 @@ var es = require('event-stream');
 
 var filter = require('gulp-filter');
 
-var crawlBase = require('../models/crawlBase');
 var ParseState = require('../models/parseState');
 
 var cheerio = require('cheerio');
@@ -17,7 +16,7 @@ var cheerio = require('cheerio');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Parse
  */
 
-var parse = function (customParser){
+var parse = function (crawlBase, customParser){
   return crawlBase.src()
 
     /**

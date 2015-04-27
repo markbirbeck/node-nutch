@@ -4,7 +4,6 @@ var es = require('event-stream');
 
 var filter = require('gulp-filter');
 
-var crawlBase = require('../models/crawlBase');
 var CrawlState = require('../models/CrawlState');
 var FetchedContent = require('../models/FetchedContent');
 
@@ -16,7 +15,7 @@ var FetchedContent = require('../models/FetchedContent');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Fetch
  */
 
-var fetch = function (){
+var fetch = function (crawlBase){
   var now = Date.now();
 
   return crawlBase.src()

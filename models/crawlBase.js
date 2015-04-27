@@ -14,35 +14,48 @@ var config = require('../config/config');
  * Create a pipeline to update the crawl database with any changes to an entry:
  */
 
-module.exports = {
-  crawlState: function(t, uri){
-    var file = new gutil.File({
-      base: config.dir.CrawlBase
-    });
+module.exports = function(target) {
+  /**
+   * If there is no output target specified then use Gulp's default:
+   */
 
-    file.data = {
-      crawlState: new CrawlState(t)
-    };
-    file.data.url = uri;
-    return file;
-  },
-  dest: lazypipe()
-    .pipe(es.map, function (file, cb){
-      file.contents = new Buffer(JSON.stringify( file.data ));
-      file.path = path.join(config.dir.CrawlBase,
-        encodeURIComponent(file.data.url));
-      cb(null, file);
-    })
-    .pipe(gulp.dest, config.dir.CrawlBase),
-  exists: function(uri, cb){
-    fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)), cb);
-  },
-  src: function (){
-    return gulp.src(path.join(config.dir.CrawlBase, '*'))
-      .pipe(es.map(function (file, cb){
-        file.data = JSON.parse(file.contents.toString());
-
-        cb(null, file);
-      }));
+  if (!target) {
+    target = gulp;
   }
+
+  return {
+    crawlState: function(t, uri){
+      var file = new gutil.File({
+        base: config.dir.CrawlBase
+      });
+
+      file.data = {
+        crawlState: new CrawlState(t)
+      };
+      file.data.url = uri;
+      return file;
+    },
+    dest: lazypipe()
+      .pipe(es.map, function (file, cb){
+        file.contents = new Buffer(JSON.stringify( file.data ));
+        file.contentType = 'application/json';
+        file.base = config.dir.CrawlBase;
+        file.path = path.join(config.dir.CrawlBase,
+          encodeURIComponent(file.data.url));
+        cb(null, file);
+      })
+      .pipe(target.dest, config.dir.CrawlBase),
+    exists: function(uri, cb){
+      fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)), cb);
+    },
+    src: function (){
+      return target.src(config.dir.CrawlBase + '/*')
+        .pipe(es.map(function (file, cb){
+          file.data = JSON.parse(file.contents.toString());
+          file.path = file.data.url;
+
+          cb(null, file);
+        }));
+    }
+  };
 };
