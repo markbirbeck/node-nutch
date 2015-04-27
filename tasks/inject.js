@@ -37,7 +37,7 @@ var inject = function (crawlBase){
             self.push(normalize(uri));
           }
         });
-        next();
+      next();
     }))
 
     /**
