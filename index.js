@@ -10,7 +10,7 @@ var config = require('./config/config');
 var s3 = require('vinyl-s3');
 var crawlBase = require('./models/crawlBase')(s3);
 
-var addTasks = function (gulp, customParser, customExtractor, customStore){
+var addTasks = function (gulp, customParser, customExtractor){
 
   /**
    * Clear the crawl database:
@@ -83,8 +83,18 @@ var addTasks = function (gulp, customParser, customExtractor, customStore){
     return tasks.parse(crawlBase, customParser);
   });
 
-  gulp.task('extract', function () {
-    return tasks.extract(crawlBase, customExtractor, customStore);
+
+  /**
+   * index: Index content into a search index:
+   *
+   * See:
+   *
+   *  https://wiki.apache.org/nutch/bin/nutch_index
+   *  https://wiki.apache.org/nutch/bin/nutch%20solrindex
+   */
+
+  gulp.task('index', function () {
+    return tasks.index(crawlBase, customExtractor);
   });
 
   /**
