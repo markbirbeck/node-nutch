@@ -8,6 +8,23 @@ var tasks = requireDir('./tasks');
 var config = require('./config/config');
 
 var s3 = require('vinyl-s3');
+
+/**
+ * TODO: Decide whether to submit this minor mod to vinyl-s3.
+ */
+
+s3.exists = function(glob, cb){
+  var exists = false;
+
+  this.src(glob)
+    .on('data', function(){
+      exists = true;
+    })
+    .on('end', function(){
+      cb(exists);
+    });
+};
+
 var crawlBase = require('./models/crawlBase')(s3);
 
 var addTasks = function (gulp, customParser, customExtractor){
