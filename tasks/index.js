@@ -12,7 +12,7 @@ var ParseState = require('../models/parseState');
 
 var config = require('../config/config');
 
-var extract = function (crawlBase, customExtractor){
+var index = function (crawlBase, customExtractor){
   return crawlBase.src()
 
     /**
@@ -86,4 +86,4 @@ var extract = function (crawlBase, customExtractor){
     ;
 };
 
-module.exports = extract;
+module.exports = index;
