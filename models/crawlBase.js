@@ -21,6 +21,7 @@ module.exports = function(target) {
 
   if (!target) {
     target = gulp;
+    gulp.exists = fs.exists;
   }
 
   return {
@@ -40,13 +41,12 @@ module.exports = function(target) {
         file.contents = new Buffer(JSON.stringify( file.data ));
         file.contentType = 'application/json';
         file.base = config.dir.CrawlBase;
-        file.path = path.join(config.dir.CrawlBase,
-          encodeURIComponent(file.data.url));
+        file.path = config.dir.CrawlBase + path.sep + encodeURIComponent(file.data.url);
         cb(null, file);
       })
       .pipe(target.dest, config.dir.CrawlBase),
     exists: function(uri, cb){
-      fs.exists(path.join(config.dir.CrawlBase, encodeURIComponent(uri)), cb);
+      target.exists(config.dir.CrawlBase + path.sep + encodeURIComponent(uri), cb);
     },
     src: function (){
       return target.src(config.dir.CrawlBase + '/*')
