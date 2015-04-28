@@ -148,7 +148,7 @@ var outlinks = function (crawlBase){
      */
 
     .pipe(es.map(function (uri, cb){
-      fs.exists(config.dir.CrawlBase + path.sep + encodeURIComponent(uri.data.url), function (exists){
+      CrawlBase.exists(config.dir.CrawlBase + path.sep + encodeURIComponent(uri.data.url), function (exists){
         if (exists){
           cb();
         } else {
