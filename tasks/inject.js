@@ -20,7 +20,7 @@ var config = require('../config/config');
 var inject = function (crawlBase){
   var now = Date.now();
 
-  return gulp.src(path.join(config.dir.seeds, '*'))
+  return gulp.src(config.dir.seeds + path.sep + '*')
 
     /**
      * Input is a simple file with a URL per line, so split the file:
