@@ -1,6 +1,7 @@
 var request = require('request');
 
 var es = require('event-stream');
+var through2 = require('through2');
 
 var filter = require('gulp-filter');
 
@@ -16,6 +17,7 @@ var FetchedContent = require('../models/FetchedContent');
  */
 
 var fetch = function (crawlBase){
+  var taskName = 'fetch';
   var now = Date.now();
 
   return crawlBase.src()
@@ -57,6 +59,26 @@ var fetch = function (crawlBase){
      * Update the crawl database with any changes:
      */
 
+    .pipe(through2.obj(function (file, enc, cb){
+      if (file.data.fetchedContent.status === 200) {
+        console.info(
+          '[%s] fetched \'%s\' (status=%d, retries=%d)',
+          taskName,
+          file.data.url,
+          file.data.fetchedContent.status,
+          file.data.crawlState.retries
+        );
+      } else {
+        console.error(
+          '[%s] failed to fetch \'%s\' (status=%d, retries=%d)',
+          taskName,
+          file.data.url,
+          file.data.fetchedContent.status,
+          file.data.crawlState.retries
+        );
+      }
+      cb(null, file);
+    }))
     .pipe(crawlBase.dest());
 };
 
