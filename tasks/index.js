@@ -13,6 +13,8 @@ var ParseState = require('../models/parseState');
 var config = require('../config/config');
 
 var index = function (crawlBase, customExtractor){
+  var taskName = 'index';
+
   return crawlBase.src()
 
     /**
@@ -52,13 +54,12 @@ var index = function (crawlBase, customExtractor){
      */
 
     .pipe(es.map(function (obj, cb){
-      cb(
-        null,
-        new gutil.File({
-          contents: new Buffer(JSON.stringify(obj)),
-          path: uuid.v1()
-        })
-      );
+      var file = new gutil.File({
+        path: uuid.v1()
+      });
+
+      file.data = obj;
+      cb(null, file);
     }))
 
 
@@ -86,6 +87,11 @@ var index = function (crawlBase, customExtractor){
       },
       config.elastic
     ))
+    .pipe(through2.obj(function (file, enc, cb){
+      console.info('[%s] indexed \'%s\' (source: "%s")', taskName,
+        file.relative, file.data.source);
+      cb(null, file);
+    }))
 
     /**
      * Update the crawl database with any changes:
