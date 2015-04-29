@@ -18,6 +18,8 @@ var config = require('../config/config');
  */
 
 var inject = function (crawlBase){
+  var taskName = 'inject';
+
   var now = Date.now();
 
   return gulp.src(config.dir.seeds + path.sep + '*')
@@ -47,6 +49,7 @@ var inject = function (crawlBase){
     .pipe(es.map(function (uri, cb){
       crawlBase.exists(uri, function (exists){
         if (exists){
+          console.info('[%s] skipping \'%s\': already injected', taskName, uri);
           cb();
         } else {
           cb(null, uri);
@@ -62,6 +65,10 @@ var inject = function (crawlBase){
       cb(null, crawlBase.crawlState(now, uri));
     }))
 
+    .pipe(through2.obj(function (file, enc, cb){
+      console.info('[%s] injecting \'%s\'', taskName, file.data.url);
+      cb(null, file);
+    }))
     .pipe(crawlBase.dest());
 };
 
