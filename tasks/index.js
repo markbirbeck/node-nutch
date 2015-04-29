@@ -63,6 +63,15 @@ var index = function (crawlBase, customExtractor){
 
 
     /**
+     * Provide an id for ElasticSearch:
+     */
+
+    .pipe(through2.obj(function (file, enc, cb){
+      file.id = file.relative;
+      cb(null, file);
+    }))
+
+    /**
      * Store each line of input:
      */
 
