@@ -1,6 +1,7 @@
 var url = require('url');
 
 var es = require('event-stream');
+var through2 = require('through2');
 
 var filter = require('gulp-filter');
 
@@ -17,6 +18,8 @@ var cheerio = require('cheerio');
  */
 
 var parse = function (crawlBase, customParser){
+  var taskName = 'parse';
+
   return crawlBase.src()
 
     /**
@@ -86,6 +89,16 @@ var parse = function (crawlBase, customParser){
      * Update the crawl database with any changes:
      */
 
+    .pipe(through2.obj(function (file, enc, cb){
+      console.info(
+        '[%s] parsed \'%s\' (parse state=%s, custom parse state=%s)',
+        taskName,
+        file.data.url,
+        file.data.parseStatus.state,
+        file.data.customParseStatus.state
+      );
+      cb(null, file);
+    }))
     .pipe(crawlBase.dest());
 };
 
