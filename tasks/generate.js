@@ -1,4 +1,5 @@
 var es = require('event-stream');
+var through2 = require('through2');
 
 var filter = require('gulp-filter');
 
@@ -16,6 +17,7 @@ var CrawlState = require('../models/CrawlState');
  */
 
 var generate = function (crawlBase){
+  var taskName = 'generate';
   var now = Date.now();
 
   return crawlBase.src()
@@ -55,6 +57,11 @@ var generate = function (crawlBase){
     /**
      * Update the crawl database with any changes:
      */
+
+    .pipe(through2.obj(function (file, enc, cb){
+      console.info('[%s] generated \'%s\'', taskName, file.data.url);
+      cb(null, file);
+    }))
 
     .pipe(crawlBase.dest());
 };
