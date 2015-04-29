@@ -14,6 +14,7 @@ var CrawlState = require('../models/CrawlState');
 var config = require('../config/config');
 
 var status = function (crawlBase){
+  var taskName = 'dbupdate:status';
   var now = Date.now();
 
   return crawlBase.src()
@@ -71,10 +72,17 @@ var status = function (crawlBase){
      * Update the crawl database with any changes:
      */
 
+    .pipe(through2.obj(function (file, enc, cb){
+      console.info('[%s] \'%s\' marked as %s', taskName, file.data.url,
+        file.data.crawlState.state);
+      cb(null, file);
+    }))
+
     .pipe(crawlBase.dest());
 };
 
 var outlinks = function (crawlBase){
+  var taskName = 'dbupdate:outlinks';
   return crawlBase.src()
 
     /**
@@ -166,6 +174,10 @@ var outlinks = function (crawlBase){
       cb(null, file);
     }))
 
+    .pipe(through2.obj(function (file, enc, cb){
+      console.info('[%s] injecting \'%s\'', taskName, file.data.url);
+      cb(null, file);
+    }))
     .pipe(crawlBase.dest());
 };
 
