@@ -6,7 +6,6 @@ var through2 = require('through2');
 var filter = require('gulp-filter');
 
 var elasticsearch = require('vinyl-elasticsearch');
-var uuid = require('uuid');
 
 var ParseState = require('../models/parseState');
 
@@ -42,6 +41,13 @@ var index = function (crawlBase, customExtractor){
           if (obj){
             obj.source = row;
             obj.url = url;
+
+            /**
+             * TODO: Slug determination will be different for each source.
+             */
+
+            obj.slug = 'premier-league-2014-2015-' +
+              obj.events[0].suffix.replace(/ /g, '-');
             self.push(obj);
           }
         });
@@ -55,7 +61,7 @@ var index = function (crawlBase, customExtractor){
 
     .pipe(es.map(function (obj, cb){
       var file = new gutil.File({
-        path: uuid.v1()
+        path: obj.slug
       });
 
       file.data = obj;
