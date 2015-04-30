@@ -86,8 +86,7 @@ var config = {
    */
 
   elastic: {
-    host: 'https://8gpo2qyg:r16yg5bb1pk09vgh@cherry-9017002.us-east-1.bonsai.io',
-    log: 'trace'
+    host: 'https://ee7mwzg4:mjl5dsqt1o2gdz1y@redwood-6178337.us-east-1.bonsai.io'
   },
   urlnormalizer: {
 
