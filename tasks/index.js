@@ -83,7 +83,7 @@ var index = function (crawlBase, customExtractor){
          */
 
         index: 'calendar.place',
-        type: 'event',
+        type: 'event'
       },
       config.elastic
     ))
