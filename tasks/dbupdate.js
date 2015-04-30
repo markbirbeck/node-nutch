@@ -8,8 +8,8 @@ var gutil = require('gulp-util');
 var filter = require('gulp-filter');
 
 var normalize = require('../plugins/normalize');
-var ParseState = require('../models/ParseState');
-var CrawlState = require('../models/CrawlState');
+var ParseState = require('../models/parseState');
+var CrawlState = require('../models/crawlState');
 var config = require('../config/config');
 
 var status = function (crawlBase){
