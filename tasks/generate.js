@@ -3,7 +3,7 @@ var through2 = require('through2');
 
 var filter = require('gulp-filter');
 
-var CrawlState = require('../models/CrawlState');
+var CrawlState = require('../models/crawlState');
 
 /**
  * generate: Creates a new batch. Selects urls to fetch from the webtable

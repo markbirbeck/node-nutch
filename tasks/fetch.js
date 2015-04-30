@@ -5,8 +5,8 @@ var through2 = require('through2');
 
 var filter = require('gulp-filter');
 
-var CrawlState = require('../models/CrawlState');
-var FetchedContent = require('../models/FetchedContent');
+var CrawlState = require('../models/crawlState');
+var FetchedContent = require('../models/fetchedContent');
 
 /**
  * fetch: Fetch data using a list of URLs:
