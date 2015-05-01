@@ -52,7 +52,6 @@ var index = function (crawlBase, customExtractor){
              */
 
             obj.slug = slugPrefix + obj.events[0].suffix.replace(/ /g, '-');
-            console.log('created slug:', obj.slug);
             self.push(obj);
           }
         });
