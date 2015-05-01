@@ -19,6 +19,7 @@
     "gulp-util": "~3.0.3",
     "js-yaml": "^3.3.0",
     "lazypipe": "~0.2.2",
+    "lodash": "^3.7.0",
     "request": "~2.53.0",
     "require-dir": "~0.1.0",
     "run-sequence": "~1.0.2",

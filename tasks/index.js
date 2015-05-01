@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var gutil = require('gulp-util');
 
 var es = require('event-stream');
@@ -13,6 +14,7 @@ var config = require('../config/config');
 
 var index = function (crawlBase, customExtractor){
   var taskName = 'index';
+  _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
 
   return crawlBase.src()
 
@@ -33,11 +35,16 @@ var index = function (crawlBase, customExtractor){
     .pipe(through2.obj(function (file, enc, next){
       var self = this;
       var url = file.data.url;
-      var slugPrefix = '';
+      var slugTemplate;
 
       if (file.data.meta) {
-        slugPrefix = file.data.meta['slug.prefix'];
+        slugTemplate = file.data.meta['slug.template'];
       }
+      if (!slugTemplate) {
+        slugTemplate = '{{events[0].source}}';
+      }
+
+      slugTemplate = _.template(slugTemplate);
 
       file.data.customParse
         .forEach(function (row){
@@ -47,11 +54,7 @@ var index = function (crawlBase, customExtractor){
             obj.source = row;
             obj.url = url;
 
-            /**
-             * TODO: Slug determination will be different for each source.
-             */
-
-            obj.slug = slugPrefix + obj.events[0].suffix.replace(/ /g, '-');
+            obj.slug = slugTemplate(obj).replace(/ /g, '-');
             self.push(obj);
           }
         });
@@ -99,7 +102,7 @@ var index = function (crawlBase, customExtractor){
     ))
     .pipe(through2.obj(function (file, enc, cb){
       console.info('[%s] indexed \'%s\' (source: "%s")', taskName,
-        file.relative, file.data.source);
+        file.relative, JSON.stringify(file.data));
       cb(null, file);
     }))
 
