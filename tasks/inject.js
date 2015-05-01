@@ -1,6 +1,5 @@
 var path = require('path');
 
-var es = require('event-stream');
 var through2 = require('through2');
 
 var gulp = require('gulp');
