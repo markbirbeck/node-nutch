@@ -28,13 +28,14 @@ s3.exists = function(glob, cb){
 var crawlBase = require('./models/crawlBase')(s3);
 
 var addTasks = function (gulp, customParser, customExtractor){
+  runSequence = runSequence.use(gulp);
 
   /**
    * Clear the crawl database:
    */
 
   gulp.task('clean:CrawlBase', function (cb){
-    del(config.dir.CrawlBase, cb);
+    return del(config.dir.CrawlBase, cb);
   });
 
   /**
@@ -46,7 +47,7 @@ var addTasks = function (gulp, customParser, customExtractor){
    */
 
   gulp.task('inject', function (cb){
-    tasks.inject(crawlBase, cb);
+    return tasks.inject(crawlBase, cb);
   });
 
 
@@ -55,7 +56,7 @@ var addTasks = function (gulp, customParser, customExtractor){
    */
 
   gulp.task('crawl', function (cb){
-    runSequence('generate', 'fetch', 'parse', 'dbupdate', cb).use(gulp);
+    return runSequence('generate', 'fetch', 'parse', 'dbupdate', cb);
   });
 
 
@@ -71,7 +72,7 @@ var addTasks = function (gulp, customParser, customExtractor){
    */
 
   gulp.task('generate', function (cb){
-    tasks.generate(crawlBase, cb);
+    return tasks.generate(crawlBase, cb);
   });
 
 
@@ -84,7 +85,7 @@ var addTasks = function (gulp, customParser, customExtractor){
    */
 
   gulp.task('fetch', function (cb){
-    tasks.fetch(crawlBase, cb);
+    return tasks.fetch(crawlBase, cb);
   });
 
 
@@ -124,7 +125,7 @@ var addTasks = function (gulp, customParser, customExtractor){
    */
 
   gulp.task('dbupdate', function (cb){
-    runSequence('dbupdate:status', 'dbupdate:outlinks', cb).use(gulp);
+    return runSequence('dbupdate:status', 'dbupdate:outlinks', cb);
   });
 
   gulp.task('dbupdate:status', function () {
