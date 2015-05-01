@@ -25,13 +25,14 @@ module.exports = function(target) {
   }
 
   return {
-    crawlState: function(t, uri){
+    crawlState: function(t, uri, meta){
       var file = new gutil.File({
         base: config.dir.CrawlBase
       });
 
       file.data = {
-        crawlState: new CrawlState(t)
+        crawlState: new CrawlState(t),
+        meta: meta
       };
       file.data.url = uri;
       return file;

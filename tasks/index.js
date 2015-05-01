@@ -33,6 +33,11 @@ var index = function (crawlBase, customExtractor){
     .pipe(through2.obj(function (file, enc, next){
       var self = this;
       var url = file.data.url;
+      var slugPrefix = '';
+
+      if (file.data.meta) {
+        slugPrefix = file.data.meta['slug.prefix'];
+      }
 
       file.data.customParse
         .forEach(function (row){
@@ -46,8 +51,8 @@ var index = function (crawlBase, customExtractor){
              * TODO: Slug determination will be different for each source.
              */
 
-            obj.slug = 'premier-league-2014-2015-' +
-              obj.events[0].suffix.replace(/ /g, '-');
+            obj.slug = slugPrefix + obj.events[0].suffix.replace(/ /g, '-');
+            console.log('created slug:', obj.slug);
             self.push(obj);
           }
         });

@@ -25,7 +25,8 @@ var inject = function (crawlBase){
   return gulp.src(config.dir.seeds + path.sep + '*')
 
     /**
-     * Input is a simple file with a URL per line, so split the file:
+     * Input is a simple file with a URL per line (with optional metdata),
+     * so split the file:
      */
 
     .pipe(through2.obj(function (file, enc, next){
@@ -34,9 +35,9 @@ var inject = function (crawlBase){
       file.contents
         .toString()
         .split(/\r?\n/)
-        .forEach(function (uri){
-          if (uri && uri[0] !== '#'){
-            self.push(normalize(uri));
+        .forEach(function (row){
+          if (row && row[0] !== '#'){
+            self.push(row);
           }
         });
       next();
@@ -46,23 +47,35 @@ var inject = function (crawlBase){
      * Don't bother if we already have an entry in the crawl database:
      */
 
-    .pipe(es.map(function (uri, cb){
+    .pipe(through2.obj(function (row, enc, cb){
+      var parts = row.split(' ');
+      var uri = normalize(parts[0]);
+
       crawlBase.exists(uri, function (exists){
         if (exists){
           console.info('[%s] skipping \'%s\': already injected', taskName, uri);
           cb();
         } else {
-          cb(null, uri);
+          parts[0] = uri;
+          cb(null, parts);
         }
       });
     }))
 
     /**
-     * Create a crawl state object for each URL:
+     * Create a crawl state object for each row from the input file:
      */
 
-    .pipe(es.map(function (uri, cb){
-      cb(null, crawlBase.crawlState(now, uri));
+    .pipe(through2.obj(function (row, enc, cb){
+      var uri = row.shift();
+      var meta = {};
+
+      row.forEach(function(prop) {
+        var def = prop.split('=');
+
+        meta[def[0]] = def[1];
+      });
+      cb(null, crawlBase.crawlState(now, uri, meta));
     }))
 
     .pipe(through2.obj(function (file, enc, cb){
