@@ -87,7 +87,7 @@ var config = {
 
   elastic: {
     host: 'https://ee7mwzg4:mjl5dsqt1o2gdz1y@redwood-6178337.us-east-1.bonsai.io',
-    requestTimeout: 60000
+    requestTimeout: 120000
   },
   urlnormalizer: {
 
