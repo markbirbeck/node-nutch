@@ -54,8 +54,13 @@ var index = function (crawlBase, customExtractor){
             obj.source = row;
             obj.url = url;
 
-            obj.slug = slugTemplate(obj).replace(/ /g, '-');
-            self.push(obj);
+            try {
+              obj.slug = slugTemplate(params).replace(/ /g, '-');
+              self.push(obj);
+            } catch (e) {
+              console.error('Template processing failed:', e, JSON.stringify(obj));
+            }
+
           }
         });
       next();
