@@ -1,6 +1,6 @@
 {
   "name": "node-nutch",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A nodejs implementation of the Nutch command set.",
   "main": "index.js",
   "scripts": {
