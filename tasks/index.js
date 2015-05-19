@@ -46,19 +46,28 @@ var index = function (crawlBase, customExtractor){
 
       slugTemplate = _.template(slugTemplate);
 
-      file.data.customParse
-        .forEach(function (row){
-          var obj = customExtractor(row);
+      customExtractor(file.data.customParse)
+        .forEach(function (obj){
+          var params = {};
 
           if (obj){
-            obj.source = row;
             obj.url = url;
+
+            params.summary = obj.summary || obj.events[0].summary;
+            if (obj.events[0].timex3.date) {
+              params.year = obj.events[0].timex3.date.year;
+              params.month = obj.events[0].timex3.date.month;
+            } else if (obj.events[0].timex3.range) {
+              params.year = obj.events[0].timex3.range.from.date.year;
+              params.month = obj.events[0].timex3.range.from.date.month;
+            }
 
             try {
               obj.slug = slugTemplate(params).replace(/ /g, '-');
               self.push(obj);
             } catch (e) {
-              console.error('Template processing failed:', e, JSON.stringify(obj));
+              console.error('Template processing failed:', e,
+                JSON.stringify(obj));
             }
 
           }
