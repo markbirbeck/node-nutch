@@ -67,12 +67,17 @@ var index = function (crawlBase, customExtractor){
      */
 
     .pipe(es.map(function (obj, cb){
-      var file = new gutil.File({
-        path: obj.slug
-      });
+      if (!obj.slug) {
+        cb(new Error(
+          'No slug. Please check there is a slug rule for this site.'));
+      } else {
+        var file = new gutil.File({
+          path: obj.slug
+        });
 
-      file.data = obj;
-      cb(null, file);
+        file.data = obj;
+        cb(null, file);
+      }
     }))
 
 
