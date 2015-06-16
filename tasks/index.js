@@ -46,7 +46,7 @@ var index = function (crawlBase, customExtractor){
 
       slugTemplate = _.template(slugTemplate);
 
-      customExtractor(file.data.customParse)
+      customExtractor(file.data.customParseChanged || file.data.customParse)
         .forEach(function (obj){
           var params = {};
 
