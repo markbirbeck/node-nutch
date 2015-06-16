@@ -50,7 +50,7 @@ var index = function (crawlBase, customExtractor){
         .forEach(function (obj){
           var params = {};
 
-          if (obj){
+          if (obj && obj.events){
             obj.url = url;
 
             params.summary = obj.summary || obj.events[0].summary;
