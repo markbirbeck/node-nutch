@@ -27,7 +27,8 @@ s3.exists = function(glob, cb){
 
 var crawlBase = require('./models/crawlBase')(s3);
 
-var addTasks = function (gulp, customParser, customExtractor){
+var addTasks = function (gulp, customParser, customExtractor,
+    customParseChanged) {
   runSequence = runSequence.use(gulp);
 
   /**
@@ -98,7 +99,7 @@ var addTasks = function (gulp, customParser, customExtractor){
    */
 
   gulp.task('parse', function () {
-    return tasks.parse(crawlBase, customParser);
+    return tasks.parse(crawlBase, customParser, customParseChanged);
   });
 
 

@@ -17,7 +17,7 @@ var cheerio = require('cheerio');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Parse
  */
 
-var parse = function (crawlBase, customParser){
+var parse = function (crawlBase, customParser, customParseChanged){
   var taskName = 'parse';
 
   return crawlBase.src()
@@ -78,6 +78,21 @@ var parse = function (crawlBase, customParser){
         var customParse = customParser(file.data.fetchedContent.content);
 
         if (customParse){
+
+          /**
+           * Use the provided function to check if the custom parse value has
+           * changed:
+           */
+
+          if (customParseChanged){
+            file.data.customParseChanged = customParseChanged(customParse, file.data.customParse);
+          }
+
+          /**
+           * Make sure to only overwrite old value after it has been used to
+           * check for changes:
+           */
+
           file.data.customParse = customParse;
           file.data.customParseStatus = new ParseState(ParseState.SUCCESS);
         }
