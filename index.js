@@ -25,7 +25,7 @@ s3.exists = function(glob, cb){
     });
 };
 
-var crawlBase = require('./models/crawlBase')(s3);
+var crawlBase = require('./models/crawlBase')();
 
 var addTasks = function (gulp, customParser, customExtractor,
     customParseChanged) {
@@ -104,6 +104,15 @@ var addTasks = function (gulp, customParser, customExtractor,
 
 
   /**
+   * extract: Extract :
+   */
+
+  gulp.task('extract', function () {
+    return tasks.extract(crawlBase, customExtractor);
+  });
+
+
+  /**
    * index: Index content into a search index:
    *
    * See:
@@ -113,7 +122,7 @@ var addTasks = function (gulp, customParser, customExtractor,
    */
 
   gulp.task('index', function () {
-    return tasks.index(crawlBase, customExtractor);
+    return tasks.index(crawlBase);
   });
 
   /**
