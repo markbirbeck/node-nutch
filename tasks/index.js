@@ -8,23 +8,23 @@ var filter = require('gulp-filter');
 
 var elasticsearch = require('vinyl-elasticsearch');
 
-var ParseState = require('../models/parseState');
+var ExtractState = require('../models/extractState');
 
 var config = require('../config/config');
 
-var index = function (crawlBase, customExtractor){
+var index = function (crawlBase){
   var taskName = 'index';
   _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
 
   return crawlBase.src()
 
     /**
-     * Only process data sources that have been parsed:
+     * Process extracted data:
      */
 
     .pipe(filter(function (file){
-      return (file.data.customParseStatus &&
-        (file.data.customParseStatus.state === ParseState.SUCCESS));
+      return (file.data.extractStatus &&
+        (file.data.extractStatus.state === ExtractState.SUCCESS));
     }))
 
 
@@ -34,44 +34,10 @@ var index = function (crawlBase, customExtractor){
 
     .pipe(through2.obj(function (file, enc, next){
       var self = this;
-      var url = file.data.url;
-      var slugTemplate;
 
-      if (file.data.meta) {
-        slugTemplate = file.data.meta['slug.template'];
-      }
-      if (!slugTemplate) {
-        slugTemplate = '{{events[0].source}}';
-      }
-
-      slugTemplate = _.template(slugTemplate);
-
-      customExtractor(file.data.customParseChanged || file.data.customParse)
-        .forEach(function (obj){
-          var params = {};
-
-          if (obj && obj.events){
-            obj.url = url;
-
-            params.summary = obj.summary || obj.events[0].summary;
-            if (obj.events[0].timex3.date) {
-              params.year = obj.events[0].timex3.date.year;
-              params.month = obj.events[0].timex3.date.month;
-            } else if (obj.events[0].timex3.range) {
-              params.year = obj.events[0].timex3.range.from.date.year;
-              params.month = obj.events[0].timex3.range.from.date.month;
-            }
-
-            try {
-              obj.slug = slugTemplate(params).replace(/ /g, '-');
-              self.push(obj);
-            } catch (e) {
-              console.error('Template processing failed:', e,
-                JSON.stringify(obj));
-            }
-
-          }
-        });
+      file.data.extracted.forEach(function (obj){
+        self.push(obj);
+      });
       next();
     }))
 
