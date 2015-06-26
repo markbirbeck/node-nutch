@@ -45,27 +45,34 @@ module.exports = function(target) {
          */
 
         if (file.data.fetchedContent) {
-          var fc = new gutil.File({
-            base: config.dir.CrawlBase,
-            path: config.dir.CrawlBase + path.sep +
-              encodeURIComponent(file.data.url) + '/fetchedContent/content',
-            contents: new Buffer(file.data.fetchedContent.content)
-          });
-          delete file.data.fetchedContent.content;
+          var fetchedContent = file.data.fetchedContent;
+          var fc;
 
-          target.dest(config.dir.CrawlBase)
-            .write(fc);
+          if (fetchedContent.content) {
+            fc = new gutil.File({
+              base: config.dir.CrawlBase,
+              path: config.dir.CrawlBase + path.sep +
+                encodeURIComponent(file.data.url) + '/fetchedContent/content',
+              contents: new Buffer(file.data.fetchedContent.content)
+            });
+            delete file.data.fetchedContent.content;
 
-          fc = new gutil.File({
-            base: config.dir.CrawlBase,
-            path: config.dir.CrawlBase + path.sep +
-              encodeURIComponent(file.data.url) + '/fetchedContent/headers',
-            contents: new Buffer(JSON.stringify(file.data.fetchedContent.headers))
-          });
-          delete file.data.fetchedContent.headers;
+            target.dest(config.dir.CrawlBase)
+              .write(fc);
+          }
 
-          target.dest(config.dir.CrawlBase)
-            .write(fc);
+          if (fetchedContent.headers) {
+            fc = new gutil.File({
+              base: config.dir.CrawlBase,
+              path: config.dir.CrawlBase + path.sep +
+                encodeURIComponent(file.data.url) + '/fetchedContent/headers',
+              contents: new Buffer(JSON.stringify(file.data.fetchedContent.headers))
+            });
+            delete file.data.fetchedContent.headers;
+
+            target.dest(config.dir.CrawlBase)
+              .write(fc);
+          }
         }
 
         file.contents = new Buffer(JSON.stringify( file.data ));
