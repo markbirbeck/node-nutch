@@ -86,6 +86,13 @@ module.exports = function(target) {
     exists: function(uri, cb){
       target.exists(config.dir.CrawlBase + path.sep + encodeURIComponent(uri), cb);
     },
+    filesDest: function(){
+      return target.dest(config.dir.CrawlBase);
+    },
+    filesSrc: function(uri, dir){
+      return target.src(config.dir.CrawlBase + path.sep +
+        encodeURIComponent(uri) + path.sep + dir);
+    },
     src: function (){
       return target.src(config.dir.CrawlBase + '/*/status')
         .pipe(es.map(function (file, cb){
