@@ -1,13 +1,16 @@
+var path = require('path');
 var _ = require('lodash');
 
 var through2 = require('through2');
+var es = require('event-stream');
 
 var filter = require('gulp-filter');
 
 var ExtractState = require('../models/extractState');
 var ParseState = require('../models/parseState');
+var config = require('../config/config');
 
-var extract = function (crawlBase, customExtractor){
+var extract = function (crawlBase){
   var taskName = 'extract';
   _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
 
@@ -18,8 +21,14 @@ var extract = function (crawlBase, customExtractor){
      */
 
     .pipe(filter(function (file){
-      return (file.data.customParseStatus &&
-        (file.data.customParseStatus.state === ParseState.SUCCESS));
+      return (
+        file.data.parseStatus &&
+          (file.data.parseStatus.state === ParseState.SUCCESS) &&
+        (!file.data.extractStatus ||
+          (file.data.extractStatus &&
+          (file.data.extractStatus.state !== ExtractState.SUCCESS))
+        )
+      );
     }))
 
 
@@ -40,42 +49,38 @@ var extract = function (crawlBase, customExtractor){
 
       slugTemplate = _.template(slugTemplate);
 
-      file.data.extracted = customExtractor(
-          file.data.customParseChanged || file.data.customParse)
-        .filter(function (obj){
-          var params = {};
+      crawlBase.filesSrc(file.data.url, 'parse')
+        .pipe(es.map(function(fetchedContent, cb) {
+          fetchedContent.base = config.dir.CrawlBase + path.sep;
+          fetchedContent.path = config.dir.CrawlBase + path.sep +
+            encodeURIComponent(url) + path.sep + 'extract';
 
-          if (!obj || !obj.events){
-            return false;
-          }
+          var items = JSON.parse(fetchedContent.contents);
 
-          obj.url = url;
+          fetchedContent.contents = new Buffer(JSON.stringify(
+            items.map(function(item) {
+              var params = {summary: item.summary};
 
-          params.summary = obj.summary || obj.events[0].summary;
-          if (obj.events[0].timex3.date) {
-            params.year = obj.events[0].timex3.date.year;
-            params.month = obj.events[0].timex3.date.month;
-          } else if (obj.events[0].timex3.range) {
-            params.year = obj.events[0].timex3.range.from.date.year;
-            params.month = obj.events[0].timex3.range.from.date.month;
-          }
-
-          try {
-            obj.slug = slugTemplate(params).replace(/ /g, '-');
-            return true;
-          } catch (e) {
-            console.error('Template processing failed:', e,
-              JSON.stringify(obj));
-          }
-          return false;
+              item.slug = slugTemplate(params).replace(/ /g, '-');
+              item.source = url;
+              return item;
+            })
+          ));
+          file.data.extractStatus = new ExtractState(ExtractState.SUCCESS);
+          cb(null, fetchedContent);
+        }))
+        .pipe(crawlBase.filesDest())
+        .on('end', function() {
+          next(null, file);
         });
-      next(null, file);
     }))
 
     .pipe(through2.obj(function (file, enc, next){
-      file.data.extractStatus = new ExtractState(ExtractState.SUCCESS);
-      console.info('[%s] extracted \'%s\' (source: "%s")', taskName,
-        file.relative, JSON.stringify(file.data.extracted));
+      console.info(
+        '[%s] extracted \'%s\'',
+        taskName,
+        file.relative
+      );
       next(null, file);
     }))
 
