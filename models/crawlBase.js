@@ -55,6 +55,17 @@ module.exports = function(target) {
 
           target.dest(config.dir.CrawlBase)
             .write(fc);
+
+          fc = new gutil.File({
+            base: config.dir.CrawlBase,
+            path: config.dir.CrawlBase + path.sep +
+              encodeURIComponent(file.data.url) + '/fetchedContent/headers',
+            contents: new Buffer(JSON.stringify(file.data.fetchedContent.headers))
+          });
+          delete file.data.fetchedContent.headers;
+
+          target.dest(config.dir.CrawlBase)
+            .write(fc);
         }
 
         file.contents = new Buffer(JSON.stringify( file.data ));
