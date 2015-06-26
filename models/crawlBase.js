@@ -48,7 +48,7 @@ module.exports = function(target) {
           var fc = new gutil.File({
             base: config.dir.CrawlBase,
             path: config.dir.CrawlBase + path.sep +
-              encodeURIComponent(file.data.url) + '/fetchedContent',
+              encodeURIComponent(file.data.url) + '/fetchedContent/content',
             contents: new Buffer(file.data.fetchedContent.content)
           });
           delete file.data.fetchedContent.content;
