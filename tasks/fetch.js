@@ -1,12 +1,14 @@
 var request = require('request');
+var path = require('path');
 
 var es = require('event-stream');
 var through2 = require('through2');
 
+var gutil = require('gulp-util');
 var filter = require('gulp-filter');
 
 var CrawlState = require('../models/crawlState');
-var FetchedContent = require('../models/fetchedContent');
+var config = require('../config/config');
 
 /**
  * fetch: Fetch data using a list of URLs:
@@ -47,8 +49,26 @@ var fetch = function (crawlBase){
           status = response.statusCode;
           headers = response.headers;
         }
+        var fetchedContent = new gutil.File({
+          base: config.dir.CrawlBase,
+          path: config.dir.CrawlBase + path.sep +
+            encodeURIComponent(file.data.url) + '/fetchedContent/content',
+          contents: new Buffer(body)
+        });
 
-        file.data.fetchedContent = new FetchedContent(status, headers, body);
+        crawlBase.filesDest(config.dir.CrawlBase)
+          .write(fetchedContent);
+
+        fetchedContent = new gutil.File({
+          base: config.dir.CrawlBase,
+          path: config.dir.CrawlBase + path.sep +
+            encodeURIComponent(file.data.url) + '/fetchedContent/headers',
+          contents: new Buffer(JSON.stringify(headers))
+        });
+        crawlBase.filesDest(config.dir.CrawlBase)
+          .write(fetchedContent);
+
+        file.data.fetchedStatus = status;
         file.data.crawlState.retries++;
         file.data.crawlState.fetchTime = now;
         cb(null, file);
@@ -60,12 +80,12 @@ var fetch = function (crawlBase){
      */
 
     .pipe(through2.obj(function (file, enc, cb){
-      if (file.data.fetchedContent.status === 200) {
+      if (file.data.fetchedStatus === 200) {
         console.info(
           '[%s] fetched \'%s\' (status=%d, retries=%d)',
           taskName,
           file.data.url,
-          file.data.fetchedContent.status,
+          file.data.fetchedStatus,
           file.data.crawlState.retries
         );
       } else {
@@ -73,7 +93,7 @@ var fetch = function (crawlBase){
           '[%s] failed to fetch \'%s\' (status=%d, retries=%d)',
           taskName,
           file.data.url,
-          file.data.fetchedContent.status,
+          file.data.fetchedStatus,
           file.data.crawlState.retries
         );
       }

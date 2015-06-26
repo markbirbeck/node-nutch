@@ -24,7 +24,7 @@ var status = function (crawlBase){
 
     .pipe(filter(function (file){
       return (file.data.crawlState.state === CrawlState.GENERATED) &&
-        (file.data.fetchedContent);
+        (file.data.fetchedStatus);
     }))
 
     /**
@@ -32,11 +32,11 @@ var status = function (crawlBase){
      */
 
     .pipe(es.map(function (file, cb){
-      if (file.data.fetchedContent.status === 200){
+      if (file.data.fetchedStatus === 200){
         file.data.crawlState.state = CrawlState.FETCHED;
       }
-      if (file.data.fetchedContent.status === 404 ||
-          file.data.fetchedContent.status.code === 'ENOTFOUND' ||
+      if (file.data.fetchedStatus === 404 ||
+          file.data.fetchedStatus.code === 'ENOTFOUND' ||
           file.data.crawlState.retries > config.db.fetch.retry.max){
         file.data.crawlState.state = CrawlState.GONE;
       }

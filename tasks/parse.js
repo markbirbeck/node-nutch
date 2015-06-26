@@ -30,7 +30,7 @@ var parse = function (crawlBase){
      */
 
     .pipe(filter(function (file){
-      return (file.data.fetchedContent.status === 200) &&
+      return (file.data.fetchedStatus === 200) &&
         (!file.data.parseStatus ||
           file.data.parseStatus.state === ParseState.NOTPARSED);
     }))
