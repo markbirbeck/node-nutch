@@ -42,7 +42,8 @@ module.exports = function(target) {
         file.contents = new Buffer(JSON.stringify( file.data ));
         file.contentType = 'application/json';
         file.base = config.dir.CrawlBase;
-        file.path = config.dir.CrawlBase + path.sep + encodeURIComponent(file.data.url);
+        file.path = config.dir.CrawlBase + path.sep +
+          encodeURIComponent(file.data.url) + path.sep + 'status';
         cb(null, file);
       })
       .pipe(target.dest, config.dir.CrawlBase),
@@ -50,7 +51,7 @@ module.exports = function(target) {
       target.exists(config.dir.CrawlBase + path.sep + encodeURIComponent(uri), cb);
     },
     src: function (){
-      return target.src(config.dir.CrawlBase + '/*')
+      return target.src(config.dir.CrawlBase + '/*/status')
         .pipe(es.map(function (file, cb){
           file.data = JSON.parse(file.contents.toString());
           file.path = file.data.url;
