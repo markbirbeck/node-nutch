@@ -39,6 +39,24 @@ module.exports = function(target) {
     },
     dest: lazypipe()
       .pipe(es.map, function (file, cb){
+
+        /**
+         * Extract fetchedContent so that it can be referenced separately:
+         */
+
+        if (file.data.fetchedContent) {
+          var fc = new gutil.File({
+            base: config.dir.CrawlBase,
+            path: config.dir.CrawlBase + path.sep +
+              encodeURIComponent(file.data.url) + '/fetchedContent',
+            contents: new Buffer(file.data.fetchedContent.content)
+          });
+          delete file.data.fetchedContent.content;
+
+          target.dest(config.dir.CrawlBase)
+            .write(fc);
+        }
+
         file.contents = new Buffer(JSON.stringify( file.data ));
         file.contentType = 'application/json';
         file.base = config.dir.CrawlBase;
