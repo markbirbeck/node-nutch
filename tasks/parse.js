@@ -43,6 +43,9 @@ var parse = function (crawlBase){
           cb(null, fetchedContent);
         }))
         .pipe(crawlBase.filesDest())
+        .on('error', function(err) {
+          console.error('Some kind of error!:', err);
+        })
         .on('end', function() {
           doneParsing(null, file);
         });
