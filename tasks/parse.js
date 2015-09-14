@@ -7,7 +7,6 @@ var filter = require('gulp-filter');
 var ParseState = require('../models/parseState');
 
 var Tika = require('tika');
-var tika = new Tika();
 var config = require('../config/config');
 
 /**
@@ -34,7 +33,7 @@ var parse = function (crawlBase){
     }))
     .pipe(es.map(function (file, doneParsing){
       crawlBase.filesSrc(file.data.url, 'fetchedContent/content')
-        .pipe(tika)
+        .pipe(new Tika())
         .pipe(es.map(function(fetchedContent, cb) {
           fetchedContent.base = config.dir.CrawlBase + path.sep;
           fetchedContent.path = config.dir.CrawlBase + path.sep +
