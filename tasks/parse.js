@@ -1,4 +1,3 @@
-var url = require('url');
 var path = require('path');
 
 var es = require('event-stream');
