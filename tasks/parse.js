@@ -48,11 +48,14 @@ var parse = function (crawlBase){
         });
     }))
     .pipe(es.map(function (file, cb){
+      var state = (file.data.parseStatus) ? file.data.parseStatus.state :
+        'state not set!!!';
+
       console.info(
         '[%s] parsed \'%s\' (parse state=%s)',
         taskName,
         file.data.url,
-        file.data.parseStatus.state
+        state
       );
       cb(null, file);
     }))
