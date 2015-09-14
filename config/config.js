@@ -8,15 +8,9 @@ var dir = {
 
 /**
  * CrawlBase: A list of all URLs we know about with their status:
- *
- * TODO: Allow options to be overridden in app that is using node-nutch.
- *
- * To use the file system change the value to:
- *
- *  dir.CrawlBase = dir.root + path.sep + 'CrawlBase';
  */
 
-dir.CrawlBase = 's3://calendar.place/CrawlBase';
+dir.CrawlBase = process.env.CRAWLBASE || (dir.root + path.sep + 'CrawlBase');
 
 /**
  * seeds: A set of text files each of which contains URLs:
@@ -86,7 +80,7 @@ var config = {
    */
 
   elastic: {
-    host: 'https://ee7mwzg4:mjl5dsqt1o2gdz1y@redwood-6178337.us-east-1.bonsai.io',
+    host: process.env.ELASTICSEARCH_HOST,
     requestTimeout: 120000
   },
   urlnormalizer: {
