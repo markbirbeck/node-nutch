@@ -2,7 +2,6 @@ var url = require('url');
 var path = require('path');
 
 var es = require('event-stream');
-var through2 = require('through2');
 
 var filter = require('gulp-filter');
 
@@ -49,7 +48,7 @@ var parse = function (crawlBase){
           doneParsing(null, file);
         });
     }))
-    .pipe(through2.obj(function (file, enc, cb){
+    .pipe(es.map(function (file, cb){
       console.info(
         '[%s] parsed \'%s\' (parse state=%s)',
         taskName,
