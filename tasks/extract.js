@@ -62,7 +62,7 @@ var extract = function (crawlBase){
               var params = {summary: item.summary};
 
               item.slug = slugTemplate(params).replace(/ /g, '-');
-              item.source = url;
+              item.url = url;
               return item;
             })
           ));
