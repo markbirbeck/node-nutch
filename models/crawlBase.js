@@ -1,3 +1,4 @@
+const h = require('highland');
 var Buffer = require('buffer').Buffer;
 var fs = require('fs');
 var path = require('path');
@@ -58,13 +59,12 @@ module.exports = function(target) {
         encodeURIComponent(uri) + path.sep + dir);
     },
     src: function (){
-      return target.src(config.dir.CrawlBase + '/*/status')
-        .pipe(es.map(function (file, cb){
+      return h(target.src(config.dir.CrawlBase + '/*/status'))
+        .map(function (file){
           file.data = JSON.parse(file.contents.toString());
           file.path = file.data.url;
-
-          cb(null, file);
-        }));
+          return file;
+        });
     }
   };
 };
