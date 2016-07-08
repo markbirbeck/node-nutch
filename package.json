@@ -17,6 +17,7 @@
     "gulp": "~3.8.11",
     "gulp-filter": "~2.0.2",
     "gulp-util": "~3.0.3",
+    "highland": "^2.8.1",
     "js-yaml": "^3.3.0",
     "lazypipe": "~0.2.2",
     "lodash": "^3.7.0",
