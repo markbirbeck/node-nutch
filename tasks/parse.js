@@ -60,7 +60,9 @@ var parse = function (crawlBase, customParser, cb){
        * Read the latest content for each URL in the crawl DB:
        */
 
-      h(crawlBase.filesSrc(statusFile.data.url, 'fetchedContent/content'))
+      var url = statusFile.data.url;
+
+      h(crawlBase.filesSrc(url, 'fetchedContent/content'))
 
         /**
          * Get a JSON version of the content:
@@ -100,7 +102,7 @@ var parse = function (crawlBase, customParser, cb){
 
           parsedContentFile.base = config.dir.CrawlBase + path.sep;
           parsedContentFile.path = config.dir.CrawlBase + path.sep +
-            encodeURIComponent(statusFile.data.url) + path.sep + 'parse';
+            encodeURIComponent(url) + path.sep + 'parse';
         })
 
         /**
