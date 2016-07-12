@@ -1,11 +1,10 @@
+'use strict';
+const h = require('highland');
+
 var request = require('request');
 var path = require('path');
 
-var es = require('event-stream');
-var through2 = require('through2');
-
 var gutil = require('gulp-util');
-var filter = require('gulp-filter');
 
 var CrawlState = require('../models/crawlState');
 var config = require('../config/config');
@@ -18,26 +17,46 @@ var config = require('../config/config');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Fetch
  */
 
-var fetch = function (crawlBase){
+var fetch = (crawlBase, cb) => {
   var taskName = 'fetch';
   var now = Date.now();
 
-  return crawlBase.src()
+  return h(crawlBase.src())
 
     /**
      * Only process data sources that are ready to be fetched:
      */
 
-    .pipe(filter(function (file){
-      return file.data.crawlState.state === CrawlState.GENERATED;
-    }))
+    .filter(statusFile => {
+      return statusFile.data.crawlState.state === CrawlState.GENERATED;
+    })
 
     /**
-     * Retrieve the document from the URL:
+     * For each item that is of the right status, fetch it:
      */
 
-    .pipe(es.map(function (file, cb){
-      request(file.data.url, function (err, response, body) {
+    .consume(function (err, statusFile, push, next){
+
+      /*
+       * Forward any errors:
+       */
+
+      if (err) {
+        push(err);
+        next();
+        return;
+      }
+
+      /**
+       * Check to see if we're finished:
+       */
+
+      if (statusFile === h.nil) {
+        push(null, h.nil);
+        return;
+      }
+
+      request(statusFile.data.url, function (err, response, body) {
         var headers;
         var status;
 
@@ -52,7 +71,7 @@ var fetch = function (crawlBase){
         var fetchedContent = new gutil.File({
           base: config.dir.CrawlBase,
           path: config.dir.CrawlBase + path.sep +
-            encodeURIComponent(file.data.url) + '/fetchedContent/content',
+            encodeURIComponent(statusFile.data.url) + '/fetchedContent/content',
           contents: new Buffer(body)
         });
 
@@ -62,44 +81,52 @@ var fetch = function (crawlBase){
         fetchedContent = new gutil.File({
           base: config.dir.CrawlBase,
           path: config.dir.CrawlBase + path.sep +
-            encodeURIComponent(file.data.url) + '/fetchedContent/headers',
+            encodeURIComponent(statusFile.data.url) + '/fetchedContent/headers',
           contents: new Buffer(JSON.stringify(headers))
         });
         crawlBase.filesDest(config.dir.CrawlBase)
           .write(fetchedContent);
 
-        file.data.fetchedStatus = status;
-        file.data.crawlState.retries++;
-        file.data.crawlState.fetchTime = now;
-        cb(null, file);
+        statusFile.data.fetchedStatus = status;
+        statusFile.data.crawlState.retries++;
+        statusFile.data.crawlState.fetchTime = now;
+
+        push(null, statusFile);
+        next();
       });
-    }))
-
-    /**
-     * Update the crawl database with any changes:
-     */
-
-    .pipe(through2.obj(function (file, enc, cb){
-      if (file.data.fetchedStatus === 200) {
+    })
+    .doto(statusFile => {
+      if (statusFile.data.fetchedStatus === 200) {
         console.info(
           '[%s] fetched \'%s\' (status=%d, retries=%d)',
           taskName,
-          file.data.url,
-          file.data.fetchedStatus,
-          file.data.crawlState.retries
+          statusFile.data.url,
+          statusFile.data.fetchedStatus,
+          statusFile.data.crawlState.retries
         );
       } else {
         console.error(
           '[%s] failed to fetch \'%s\' (status=%d, retries=%d)',
           taskName,
-          file.data.url,
-          file.data.fetchedStatus,
-          file.data.crawlState.retries
+          statusFile.data.url,
+          statusFile.data.fetchedStatus,
+          statusFile.data.crawlState.retries
         );
       }
-      cb(null, file);
-    }))
-    .pipe(crawlBase.dest());
+    })
+
+    /**
+     * Update the crawl database with any changes:
+     */
+
+    .through(crawlBase.dest())
+
+    /**
+     * Let Gulp know that we're done:
+     */
+
+    .done(cb)
+    ;
 };
 
 module.exports = fetch;
