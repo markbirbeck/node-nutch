@@ -1,7 +1,5 @@
-var es = require('event-stream');
-var through2 = require('through2');
-
-var filter = require('gulp-filter');
+'use strict';
+const h = require('highland');
 
 var CrawlState = require('../models/crawlState');
 
@@ -16,54 +14,58 @@ var CrawlState = require('../models/crawlState');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Generate
  */
 
-var generate = function (crawlBase){
+var generate = (crawlBase, cb) => {
   var taskName = 'generate';
   var now = Date.now();
 
-  return crawlBase.src()
+  return h(crawlBase.src())
 
     /**
      * Only process data sources that haven't been generated yet:
      */
 
-    .pipe(filter(function (file){
-      return file.data.crawlState.state !== CrawlState.GENERATED;
-    }))
+    .filter(statusFile => {
+      return statusFile.data.crawlState.state !== CrawlState.GENERATED;
+    })
 
     /**
      * Also ensure that we only pick up URLs that it's time to fetch:
      */
 
-    .pipe(filter(function (file){
-      return file.data.crawlState.fetchTime < now;
-    }))
+    .filter(statusFile => {
+      return statusFile.data.crawlState.fetchTime < now;
+    })
 
     /**
      * Update the status to indicate that the URL is about to be fetched:
      */
 
-    .pipe(es.map(function (file, cb){
-      file.data.crawlState.state = CrawlState.GENERATED;
-      file.data.crawlState.retries = 0;
+    .doto(statusFile => {
+      statusFile.data.crawlState.state = CrawlState.GENERATED;
+      statusFile.data.crawlState.retries = 0;
 
       /**
        * Prevent this URL from being generated for another week:
        */
 
-      file.data.crawlState.fetchTime = now + (7 * 24 * 60 * 60 * 1000);
-      cb(null, file);
-    }))
+      statusFile.data.crawlState.fetchTime = now + (7 * 24 * 60 * 60 * 1000);
+    })
+    .doto(statusFile => {
+      console.info('[%s] generated \'%s\'', taskName, statusFile.data.url);
+    })
 
     /**
      * Update the crawl database with any changes:
      */
 
-    .pipe(through2.obj(function (file, enc, cb){
-      console.info('[%s] generated \'%s\'', taskName, file.data.url);
-      cb(null, file);
-    }))
+    .through(crawlBase.dest())
 
-    .pipe(crawlBase.dest());
+    /**
+     * Let Gulp know that we're done:
+     */
+
+    .done(cb)
+    ;
 };
 
 module.exports = generate;
