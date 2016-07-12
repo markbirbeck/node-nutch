@@ -3,14 +3,9 @@ const h = require('highland');
 
 var path = require('path');
 
-var es = require('event-stream');
-var through2 = require('through2');
-
-var filter = require('gulp-filter');
-
 var ParseState = require('../models/parseState');
 
-var Tika = require('tika');
+// var Tika = require('tika');
 var config = require('../config/config');
 
 /**
@@ -21,7 +16,7 @@ var config = require('../config/config');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Parse
  */
 
-var parse = function (crawlBase, customParser, customParseChanged, cb){
+var parse = function (crawlBase, customParser, cb){
   var taskName = 'parse';
 
   return h(crawlBase.src())
@@ -30,109 +25,116 @@ var parse = function (crawlBase, customParser, customParseChanged, cb){
      * Only process data sources that have been fetched, and not parsed:
      */
 
-    .filter(file => {
-      return (file.data.fetchedStatus === 200) &&
-        (!file.data.parseStatus ||
-          file.data.parseStatus.state === ParseState.NOTPARSED);
+    .filter(statusFile => {
+      return (statusFile.data.fetchedStatus === 200) &&
+        (!statusFile.data.parseStatus ||
+          statusFile.data.parseStatus.state === ParseState.NOTPARSED);
     })
-    .flatMap(function(file) {
-      console.log('In flatMap');
-      return h(function(push/*, next*/) {
-        let onDone = () => {
-          push(null, file);
-          push(null, h.nil);
-        };
 
-        h(crawlBase.filesSrc(file.data.url, 'fetchedContent/content'))
-          .through(new Tika())
-          .map(function(fetchedContent) {
-            console.log('In parsing post Tika:', fetchedContent);
-            fetchedContent.base = config.dir.CrawlBase + path.sep;
-            fetchedContent.path = config.dir.CrawlBase + path.sep +
-              encodeURIComponent(file.data.url) + path.sep + 'parse';
-            file.data.parseStatus = new ParseState(ParseState.SUCCESS);
-            return fetchedContent;
-          })
-          .doto(() => {
-            console.log('In parsing, about to write to filesDest');
-          })
-          .through(h(crawlBase.filesDest()))
-          // .resume()
-          // .error(err => {
-          //   console.error('Some kind of error!:', err);
-          // })
-          .done(function() {
-            console.log('In end');
-            onDone();
-          })
-          ;
+    /**
+     * For each item that is of the right status parse the content:
+     */
 
-      });
-    })
-    // .pipe(es.map(function (file, doneParsing){
-    //   crawlBase.filesSrc(file.data.url, 'fetchedContent/content')
-    //     .map(function(data) {
-    //       var customParse = customParser(file.data);
+    .consume(function (err, statusFile, push, next){
 
-    //       if (customParse) {
-    //         file.data.customParse = customParse;
-    //       }
-    //       return file;
-    //     })
-    //     .pipe(es.map(function(fetchedContent, cb) {
-    //       console.log('In parsing post custom parse:', fetchedContent);
+      /*
+       * Forward any errors:
+       */
+
+      if (err) {
+        push(err);
+        next();
+        return;
+      }
+
+      /**
+       * Check to see if we're finished:
+       */
+
+      if (statusFile === h.nil) {
+        push(null, h.nil);
+        return;
+      }
+
+      /**
+       * Read the latest content for each URL in the crawl DB:
+       */
+
+      h(crawlBase.filesSrc(statusFile.data.url, 'fetchedContent/content'))
+
+        /**
+         * Get a JSON version of the content:
+         */
+
+        .doto(fetchedContentFile => {
+          fetchedContentFile.data = JSON.parse(String(fetchedContentFile.contents));
+        })
+
+        /**
+         * Parse the fetched content:
+         *
+         * [TODO] At the moment we don't need to 'parse' because we're
+         * reading JSON.
+         */
+
+        // .through(new Tika())
+
+        /**
+         * Don't bother processing if the parsed content has not changed:
+         */
+
+        .filter(parsedContentFile => {
+          return parsedContentFile.contents.toString() !== statusFile.data.parsedContent;
+        })
+
+        /**
+         * Set up the path for saving the parsed data to:
+         */
+
+        .doto(parsedContentFile => {
 
           /**
-           * Use the provided function to check if the custom parse value has
-           * changed:
+           * [TODO] Shouldn't keep reading from config; instead, get
+           * settings from the crawlBase object.
            */
 
-        //   if (customParseChanged){
-        //     fetchedContent.data.customParseChanged = customParseChanged(customParse,
-        //       fetchedContent.data.customParse);
-        //   }
-        //   fetchedContent.base = config.dir.CrawlBase + path.sep;
-        //   fetchedContent.path = config.dir.CrawlBase + path.sep +
-        //     encodeURIComponent(file.data.url) + path.sep + 'customParse';
-        //   file.data.customParseStatus = new ParseState(ParseState.SUCCESS);
-        //   cb(null, fetchedContent);
-        // }))
-        // .pipe(es.map(function(file, cb) {
-        //   console.log('In custom parsing, about to write to filesDest');
-        //   cb(null, file);
-        // }))
-        // .pipe(crawlBase.filesDest())
-        // // .resume()
-        // .on('error', function(err) {
-        //   console.error('Some kind of error!:', err);
-        // })
-        // .on('end', function() {
-        //   console.log('In end of customer parse');
-        //   doneParsing(null, file);
-        // });
-    // }))
-    // .pipe(es.map(function (file, cb){
-    //   if (customParser){
-    //     var customParse = customParser(file.data.fetchedContent.content);
+          parsedContentFile.base = config.dir.CrawlBase + path.sep;
+          parsedContentFile.path = config.dir.CrawlBase + path.sep +
+            encodeURIComponent(statusFile.data.url) + path.sep + 'parse';
+        })
 
-    //     if (customParse){
+        /**
+         * Write the parsed files:
+         */
 
-          /**
-           * Make sure to only overwrite old value after it has been used to
-           * check for changes:
-           */
+        .through(crawlBase.filesDest())
 
-    //       file.data.customParse = customParse;
-    //       file.data.customParseStatus = new ParseState(ParseState.SUCCESS);
-    //     }
-    //   }
-    //   cb(null, file);
-    // }))
-    .doto(file => {
-      let state = (file.data.parseStatus) ? file.data.parseStatus.state :
-        'state not set!!!';
+        /**
+         * Update the parse status:
+         */
 
-      console.info(`[${taskName}] parsed '${file.data.url}' (parse state=${state})`);
+        .doto(parsedContentFile => {
+          statusFile.data.parsedContent = parsedContentFile.contents.toString();
+          statusFile.data.parseStatus = new ParseState(ParseState.SUCCESS);
+        })
+
+        /**
+         * Update the extract status:
+         */
+
+        .doto(() => {
+          delete statusFile.data.extractStatus;
+        })
+
+        /**
+         * Finally, indicate that we're finished this nested pipeline:
+         */
+
+        .done(function() {
+          push(null, statusFile);
+          next();
+        })
+        ;
     })
 
     /**
@@ -140,7 +142,13 @@ var parse = function (crawlBase, customParser, customParseChanged, cb){
      */
 
     .through(crawlBase.dest())
-    .done(cb);
+
+    /**
+     * Let Gulp know that we're done:
+     */
+
+    .done(cb)
+    ;
 };
 
 module.exports = parse;
