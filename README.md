@@ -83,7 +83,7 @@ const nodeNutch = require('node-nutch');
 Then, if using the filesystem as a `CrawlBase`:
 
 ```javascript
-nodeNutch.addTasks(gulp, undefined, customParser, customExtract, customProcess);
+nodeNutch.addTasks(gulp, undefined, customExtract, customProcess);
 ```
 
 Alternatively, if using S3 as a `CrawlBase`:
@@ -103,5 +103,5 @@ s3.exists = function(glob, cb){
     });
 };
 
-nodeNutch.addTasks(gulp, s3, customParser, customExtract, customProcess);
+nodeNutch.addTasks(gulp, s3, customExtract, customProcess);
 ```
