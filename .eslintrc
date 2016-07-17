@@ -1,0 +1,12 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es6": true
+  },
+  "rules": {
+    "eqeqeq": 2,
+    "no-undef": 2,
+    "no-unused-vars": 2
+  }
+}
