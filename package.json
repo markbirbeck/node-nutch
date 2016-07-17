@@ -1,6 +1,6 @@
 {
   "name": "node-nutch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A set of Gulp commands that provide similar functionality to Apache Nutch.",
   "main": "index.js",
   "keywords": [
