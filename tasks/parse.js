@@ -26,7 +26,7 @@ var parse = function (crawlBase, customParser, cb){
      */
 
     .filter(statusFile => {
-      return (statusFile.data.fetchedStatus === 200) &&
+      return (statusFile.data.fetchStatus === 200) &&
         (!statusFile.data.parseStatus ||
           statusFile.data.parseStatus.state === ParseState.NOTPARSED);
     })
@@ -85,23 +85,23 @@ var parse = function (crawlBase, customParser, cb){
          * Don't bother processing if the parsed content has not changed:
          */
 
-        .filter(parsedContentFile => {
-          return parsedContentFile.contents.toString() !== statusFile.data.parsedContent;
+        .filter(parseContentFile => {
+          return parseContentFile.contents.toString() !== statusFile.data.parseContent;
         })
 
         /**
          * Set up the path for saving the parsed data to:
          */
 
-        .doto(parsedContentFile => {
+        .doto(parseContentFile => {
 
           /**
            * [TODO] Shouldn't keep reading from config; instead, get
            * settings from the crawlBase object.
            */
 
-          parsedContentFile.base = config.dir.CrawlBase + path.sep;
-          parsedContentFile.path = config.dir.CrawlBase + path.sep +
+          parseContentFile.base = config.dir.CrawlBase + path.sep;
+          parseContentFile.path = config.dir.CrawlBase + path.sep +
             encodeURIComponent(url) + path.sep + 'parse';
         })
 
@@ -115,8 +115,8 @@ var parse = function (crawlBase, customParser, cb){
          * Update the parse status:
          */
 
-        .doto(parsedContentFile => {
-          statusFile.data.parsedContent = parsedContentFile.contents.toString();
+        .doto(parseContentFile => {
+          statusFile.data.parseContent = parseContentFile.contents.toString();
           statusFile.data.parseStatus = new ParseState(ParseState.SUCCESS);
         })
 
@@ -137,6 +137,12 @@ var parse = function (crawlBase, customParser, cb){
           next();
         })
         ;
+    })
+    .doto(statusFile => {
+      let state = (statusFile.data.parseStatus) ? statusFile.data.parseStatus.state :
+        'state not set!!!';
+
+      console.info(`[${taskName}] parsed '${statusFile.data.url}' (parse state=${state})`);
     })
 
     /**
