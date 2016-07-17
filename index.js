@@ -7,8 +7,7 @@ var tasks = requireDir('./tasks');
 
 var config = require('./config/config');
 
-var addTasks = function (gulp, crawlBaseTarget, customParser, customExtractor,
-  customProcess) {
+var addTasks = function (gulp, crawlBaseTarget, customExtractor, customProcess) {
   var crawlBase = require('./models/crawlBase')(crawlBaseTarget);
 
   runSequence = runSequence.use(gulp);
@@ -81,7 +80,7 @@ var addTasks = function (gulp, crawlBaseTarget, customParser, customExtractor,
    */
 
   gulp.task('parse', function (cb) {
-    return tasks.parse(crawlBase, customParser, cb);
+    return tasks.parse(crawlBase, cb);
   });
 
 

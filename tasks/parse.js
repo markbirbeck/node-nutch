@@ -16,7 +16,7 @@ var config = require('../config/config');
  *  https://wiki.apache.org/nutch/Nutch2Crawling#Parse
  */
 
-var parse = function (crawlBase, customParser, cb){
+var parse = function (crawlBase, cb){
   var taskName = 'parse';
 
   return h(crawlBase.src())
