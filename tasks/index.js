@@ -1,101 +1,130 @@
-var _ = require('lodash');
-var gutil = require('gulp-util');
-
-var es = require('event-stream');
-var through2 = require('through2');
-
-var filter = require('gulp-filter');
+'use strict';
+const h = require('highland');
 
 var elasticsearch = require('vinyl-elasticsearch');
 
 var ExtractState = require('../models/extractState');
-
 var config = require('../config/config');
 
-var index = function (crawlBase){
+var index = (crawlBase, cb) => {
   var taskName = 'index';
-  _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
 
-  return crawlBase.src()
-
-    /**
-     * Process extracted data:
-     */
-
-    .pipe(filter(function (file){
-      return (file.data.extractStatus &&
-        (file.data.extractStatus.state === ExtractState.SUCCESS));
-    }))
-
+  return h(crawlBase.src())
 
     /**
-     * Process each line of input:
+     * Only process data sources that have been extracted:
      */
 
-    .pipe(through2.obj(function (file, enc, next){
-      var self = this;
-
-      file.data.extracted.forEach(function (obj){
-        self.push(obj);
-      });
-      next();
-    }))
-
+    .filter(statusFile => {
+      return (statusFile.data.extractStatus &&
+        (statusFile.data.extractStatus.state === ExtractState.SUCCESS));
+    })
 
     /**
-     * Turn into a Vinyl file:
+     * For each item that is of the right status parse the content:
      */
 
-    .pipe(es.map(function (obj, cb){
-      if (!obj.slug) {
-        cb(new Error(
-          'No slug. Please check there is a slug rule for this site.'));
-      } else {
-        var file = new gutil.File({
-          path: obj.slug
-        });
+    .consume(function (err, statusFile, push, next){
 
-        file.data = obj;
-        cb(null, file);
+      /*
+       * Forward any errors:
+       */
+
+      if (err) {
+        push(err);
+        next();
+        return;
       }
-    }))
 
+      /**
+       * Check to see if we're finished:
+       */
 
-    /**
-     * Provide an id for ElasticSearch:
-     */
+      if (statusFile === h.nil) {
+        push(null, h.nil);
+        return;
+      }
 
-    .pipe(through2.obj(function (file, enc, cb){
-      file.id = file.relative;
-      cb(null, file);
-    }))
+      /**
+       * Read the extracted content for each URL in the crawl DB:
+       */
 
-    /**
-     * Store each line of input:
-     */
+      var url = statusFile.data.url;
 
-    .pipe(elasticsearch.dest({
+      h(crawlBase.filesSrc(url, 'extract'))
 
         /**
-         * [TODO] Sort out configuration.
+         * Get a JSON version of the content:
          */
 
-        index: 'calendar.place',
-        type: 'event'
-      },
-      config.elastic
-    ))
-    .pipe(through2.obj(function (file, enc, cb){
-      console.info('[%s] indexed \'%s\' (source: "%s")', taskName,
-        file.relative, JSON.stringify(file.data));
-      cb(null, file);
-    }))
+        .doto(extractedContentFile => {
+          extractedContentFile.data = JSON.parse(String(extractedContentFile.contents));
+        })
+
+        /**
+         * If any fields use the params/val format then convert to the
+         * direct format:
+         */
+
+        .doto(item => {
+          let obj = item.data;
+
+          if (obj) {
+            Object.keys(obj).forEach(function(k) {
+              var member = obj[k];
+
+              if (member.val) {
+                obj[k] = member.val;
+                console.log('Changed: %s', k);
+              }
+            });
+          }
+        })
+
+        /**
+         * Store each line of input:
+         */
+
+        .through(elasticsearch.dest({
+            index: 'calendar.place'
+          },
+          config.elastic
+        ))
+
+        /**
+         * Update the indexed status:
+         */
+
+        .doto(indexedContentFile => {
+          statusFile.data.indexedContent = indexedContentFile.contents.toString();
+          // statusFile.data.indexStatus = new IndexState(IndexState.SUCCESS);
+        })
+
+        /**
+         * Finally, indicate that we're finished this nested pipeline:
+         */
+
+        .done(function() {
+          push(null, statusFile);
+          next();
+        })
+        ;
+    })
+    .doto(statusFile => {
+      console.info(`[${taskName}] indexed '${statusFile.data.url}'`);
+    })
 
     /**
      * Update the crawl database with any changes:
      */
 
-    // .pipe(crawlBase.dest())
+    .through(crawlBase.dest())
+
+    /**
+     * Let Gulp know that we're done:
+     */
+
+    .done(cb)
     ;
 };
 
