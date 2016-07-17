@@ -19,7 +19,6 @@
   "homepage": "https://github.com/markbirbeck/node-nutch",
   "dependencies": {
     "URIjs": "~1.14.1",
-    "cheerio": "~0.18.0",
     "config": "^1.12.0",
     "del": "~1.1.1",
     "event-stream": "~3.2.2",
@@ -34,7 +33,6 @@
     "require-dir": "~0.1.0",
     "run-sequence": "~1.0.2",
     "through2": "~0.6.3",
-    "vinyl-elasticsearch": "^0.2.0",
-    "vinyl-s3": "^0.2.5"
+    "vinyl-elasticsearch": "^0.2.0"
   }
 }
