@@ -1,94 +1,163 @@
+'use strict';
+const h = require('highland');
+
 var path = require('path');
-var _ = require('lodash');
-
-var through2 = require('through2');
-var es = require('event-stream');
-
-var filter = require('gulp-filter');
 
 var ExtractState = require('../models/extractState');
 var ParseState = require('../models/parseState');
 var config = require('../config/config');
 
-var extract = function (crawlBase){
+var extract = (crawlBase, extractFn, cb) => {
   var taskName = 'extract';
-  _.templateSettings.interpolate = /{{([\s\S]+?)}}/g;
 
-  return crawlBase.src()
+  return h(crawlBase.src())
 
     /**
-     * Only process data sources that have been parsed:
+     * Only process data sources that have been parsed but not extracted:
      */
 
-    .pipe(filter(function (file){
+    .filter(statusFile => {
       return (
-        file.data.parseStatus &&
-          (file.data.parseStatus.state === ParseState.SUCCESS) &&
-        (!file.data.extractStatus ||
-          (file.data.extractStatus &&
-          (file.data.extractStatus.state !== ExtractState.SUCCESS))
+        statusFile.data.parseStatus &&
+          (statusFile.data.parseStatus.state === ParseState.SUCCESS) &&
+        (!statusFile.data.extractStatus ||
+          (statusFile.data.extractStatus &&
+          (statusFile.data.extractStatus.state !== ExtractState.SUCCESS))
         )
       );
-    }))
-
+    })
 
     /**
-     * Process each line of input:
+     * For each item that is of the right status extract the content:
      */
 
-    .pipe(through2.obj(function (file, enc, next){
-      var url = file.data.url;
-      var slugTemplate;
+    .consume(function (err, statusFile, push, next){
 
-      if (file.data.meta) {
-        slugTemplate = file.data.meta['slug.template'];
+      /*
+       * Forward any errors:
+       */
+
+      if (err) {
+        push(err);
+        next();
+        return;
       }
-      if (!slugTemplate) {
-        slugTemplate = '{{events[0].source}}';
+
+      /**
+       * Check to see if we're finished:
+       */
+
+      if (statusFile === h.nil) {
+        push(null, h.nil);
+        return;
       }
 
-      slugTemplate = _.template(slugTemplate);
+      /**
+       * Read the latest parsed content for each URL in the crawl DB:
+       */
 
-      crawlBase.filesSrc(file.data.url, 'parse')
-        .pipe(es.map(function(fetchedContent, cb) {
-          fetchedContent.base = config.dir.CrawlBase + path.sep;
-          fetchedContent.path = config.dir.CrawlBase + path.sep +
+      var url = statusFile.data.url;
+
+      h(crawlBase.filesSrc(url, 'parse'))
+
+        /**
+         * Get a JSON version of the content:
+         */
+
+        .doto(parseContentFile => {
+          parseContentFile.data = JSON.parse(String(parseContentFile.contents));
+        })
+
+        /**
+         * Run the custom extractor:
+         */
+
+        .doto(extractContentFile => {
+          extractContentFile.data = extractFn(extractContentFile.data);
+        })
+
+        /**
+         * Don't bother processing if the extracted content has not changed:
+         */
+
+        .filter(extractContentFile => {
+          return JSON.stringify(extractContentFile.data) !== statusFile.data.extractContent;
+        })
+
+        /**
+         * Set up the path for saving the extracted data to:
+         */
+
+        .doto(extractContentFile => {
+
+          /**
+           * [TODO] Shouldn't keep reading from config; instead, get
+           * settings from the crawlBase object.
+           */
+
+          extractContentFile.base = config.dir.CrawlBase + path.sep;
+          extractContentFile.path = config.dir.CrawlBase + path.sep +
             encodeURIComponent(url) + path.sep + 'extract';
+        })
 
-          var items = JSON.parse(fetchedContent.contents);
+        /**
+         * Convert the JSON back to a buffer:
+         */
 
-          fetchedContent.contents = new Buffer(JSON.stringify(
-            items.map(function(item) {
-              var params = {summary: item.summary};
+        .doto(parseContentFile => {
+          parseContentFile.contents = new Buffer(JSON.stringify(parseContentFile.data));
+        })
 
-              item.slug = slugTemplate(params).replace(/ /g, '-');
-              item.url = url;
-              return item;
-            })
-          ));
-          file.data.extractStatus = new ExtractState(ExtractState.SUCCESS);
-          cb(null, fetchedContent);
-        }))
-        .pipe(crawlBase.filesDest())
-        .on('end', function() {
-          next(null, file);
-        });
-    }))
+        /**
+         * Write the parsed files:
+         */
 
-    .pipe(through2.obj(function (file, enc, next){
-      console.info(
-        '[%s] extracted \'%s\'',
-        taskName,
-        file.relative
-      );
-      next(null, file);
-    }))
+        .through(crawlBase.filesDest())
+
+        /**
+         * Update the extracted status:
+         */
+
+        .doto(extractContentFile => {
+          statusFile.data.prevExtractFetchTime = statusFile.data.extractFetchTime;
+          statusFile.data.extractFetchTime = statusFile.data.crawlState.fetchTime;
+          statusFile.data.prevExtractContent = statusFile.data.extractContent;
+          statusFile.data.extractContent = extractContentFile.contents.toString();
+          statusFile.data.extractStatus = new ExtractState(ExtractState.SUCCESS);
+        })
+        /**
+         * Update the process status:
+         */
+
+        .doto(() => {
+          delete statusFile.data.processStatus;
+        })
+
+        /**
+         * Finally, indicate that we're finished this nested pipeline:
+         */
+
+        .done(function() {
+          push(null, statusFile);
+          next();
+        })
+        ;
+    })
+    .doto(statusFile => {
+      console.info(`[${taskName}] extracted '${statusFile.data.url}'`);
+    })
 
     /**
      * Update the crawl database with any changes:
      */
 
-    .pipe(crawlBase.dest())
+    .through(crawlBase.dest())
+
+    /**
+     * Let Gulp know that we're done:
+     */
+
+    .done(cb)
     ;
 };
 
