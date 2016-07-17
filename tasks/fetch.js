@@ -87,21 +87,27 @@ var fetch = (crawlBase, cb) => {
         crawlBase.filesDest(config.dir.CrawlBase)
           .write(fetchedContent);
 
-        statusFile.data.fetchedStatus = status;
+        statusFile.data.fetchStatus = status;
         statusFile.data.crawlState.retries++;
         statusFile.data.crawlState.fetchTime = now;
+
+        /**
+         * Update the parse status:
+         */
+
+        delete statusFile.data.parseStatus;
 
         push(null, statusFile);
         next();
       });
     })
     .doto(statusFile => {
-      if (statusFile.data.fetchedStatus === 200) {
+      if (statusFile.data.fetchStatus === 200) {
         console.info(
           '[%s] fetched \'%s\' (status=%d, retries=%d)',
           taskName,
           statusFile.data.url,
-          statusFile.data.fetchedStatus,
+          statusFile.data.fetchStatus,
           statusFile.data.crawlState.retries
         );
       } else {
@@ -109,7 +115,7 @@ var fetch = (crawlBase, cb) => {
           '[%s] failed to fetch \'%s\' (status=%d, retries=%d)',
           taskName,
           statusFile.data.url,
-          statusFile.data.fetchedStatus,
+          statusFile.data.fetchStatus,
           statusFile.data.crawlState.retries
         );
       }
